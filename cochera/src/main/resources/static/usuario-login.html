@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cochera — Ingreso usuario</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--asfalto:#1b1d1c;--asfalto2:#262927;--linea:#3a3e3b;--senal:#f2c200;--alto:#e2473b;--ok:#3fa66b;--tiza:#e8e6e0;--gris:#8f938d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--asfalto);color:var(--tiza);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;
+ background-image:repeating-linear-gradient(90deg,transparent 0 78px,rgba(255,255,255,.02) 78px 80px)}
+header{border-bottom:3px solid var(--senal);padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{font-family:'Archivo Black',sans-serif;font-size:20px}h1 span{color:var(--senal)}
+a.link{color:var(--senal);font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:none;border-bottom:1px solid var(--linea)}
+main{max-width:400px;margin:40px auto;padding:0 22px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--gris);margin-bottom:12px}
+form{background:var(--asfalto2);padding:22px}
+label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--gris);margin:14px 0 5px}
+label:first-child{margin-top:0}
+input{width:100%;background:var(--asfalto);border:1px solid var(--linea);color:var(--tiza);padding:11px;
+ font-family:'IBM Plex Mono',monospace;font-size:14px}
+input:focus{outline:2px solid var(--senal);outline-offset:1px}
+.btn{margin-top:22px;width:100%;background:var(--senal);border:none;color:#111;padding:14px;
+ font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:.05em;cursor:pointer}
+.btn:disabled{background:var(--linea);color:var(--gris);cursor:not-allowed}
+.msg{margin-top:16px;padding:11px;font-size:13px;border-left:3px solid;display:none}
+.msg.err{border-color:var(--alto);background:rgba(226,71,59,.1);display:block}
+.footer{margin-top:16px;text-align:center;font-size:12px;color:var(--gris)}
+</style>
+</head>
+<body>
+<header>
+  <h1>COCHERA <span>INGRESO</span></h1>
+  <a class="link" href="admin-login.html">Soy admin →</a>
+</header>
+
+<main>
+  <p class="eyebrow">INICIA SESIÓN</p>
+  <form id="frm">
+    <label for="dni">DNI</label>
+    <input id="dni" required pattern="\d{8}" title="8 dígitos" placeholder="45871236">
+
+    <label for="password">CONTRASEÑA</label>
+    <input id="password" type="password" required placeholder="••••••••">
+
+    <button class="btn" id="btn">INGRESAR</button>
+    <div class="msg" id="msg"></div>
+  </form>
+  <p class="footer">¿No tienes cuenta? <a class="link" href="usuario-registro.html">Regístrate aquí</a></p>
+  <p class="footer"><a class="link" href="recuperar.html?rol=usuario">¿Olvidaste tu contraseña?</a></p>
+</main>
+
+<script src="js/error-modal.js"></script>
+<script>
+const API = 'http://localhost:8080/api/auth';
+
+frm.onsubmit = async e => {
+  e.preventDefault();
+  btn.disabled = true;
+  msg.style.display = 'none';
+  const body = { dni: dni.value.trim(), password: password.value };
+  try {
+    const r = await fetch(API + '/login/usuario', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (r.ok) {
+      localStorage.setItem('user_token', d.token);
+      localStorage.setItem('user_nombre', d.nombre);
+      location.href = 'usuario.html';
+      return;
+    }
+    msg.className = 'msg err';
+    msg.textContent = d.error || 'No se pudo iniciar sesión.';
+    msg.style.display = 'block';
+  } catch (err) {
+    showErrorModal(null, () => frm.requestSubmit());
+  }
+  btn.disabled = false;
+};
+
+if (localStorage.getItem('user_token')) location.href = 'usuario.html';
+</script>
+</body>
+</html>

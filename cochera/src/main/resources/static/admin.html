@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cochera — Panel del admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--asfalto:#1b1d1c;--asfalto2:#262927;--linea:#3a3e3b;--senal:#f2c200;--alto:#e2473b;--ok:#3fa66b;--tiza:#e8e6e0;--gris:#8f938d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--asfalto);color:var(--tiza);font-family:'IBM Plex Sans',sans-serif;
+ background-image:repeating-linear-gradient(90deg,transparent 0 78px,rgba(255,255,255,.02) 78px 80px)}
+header{border-bottom:3px solid var(--senal);padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{font-family:'Archivo Black',sans-serif;font-size:20px}h1 span{color:var(--senal)}
+.reloj{font-family:'IBM Plex Mono',monospace;color:var(--senal);font-size:14px}
+main{max-width:1080px;margin:0 auto;padding:24px 22px 60px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--gris);margin-bottom:10px}
+.sedes{display:flex;gap:8px;margin-bottom:22px}
+.sede-tab{background:var(--asfalto2);border:1px solid var(--linea);color:var(--gris);padding:9px 16px;
+ font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;cursor:pointer}
+.sede-tab.activa{border-color:var(--senal);color:var(--senal);background:rgba(242,194,0,.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:26px}
+.kpi{background:var(--asfalto2);border-left:4px solid var(--senal);padding:16px}
+.kpi .n{font-family:'Archivo Black',sans-serif;font-size:34px;line-height:1}
+.kpi .l{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gris);letter-spacing:.1em;margin-top:6px}
+.kpi input{width:70px;background:none;border:none;border-bottom:1px solid var(--linea);color:var(--tiza);
+ font-family:'Archivo Black',sans-serif;font-size:34px}
+.playa{display:flex;gap:10px;margin-bottom:26px;flex-wrap:wrap}
+.cajon{flex:1;min-width:150px;height:110px;border:2px dashed var(--linea);border-top:none;position:relative;
+ display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px}
+.cajon.lleno{border:2px solid var(--senal);background:rgba(242,194,0,.09)}
+.cajon .placa{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--senal);font-size:15px}
+.cajon .quien{font-size:12px;color:var(--gris)}
+.cajon .libre{font-family:'IBM Plex Mono',monospace;color:var(--linea);font-size:12px;letter-spacing:.15em}
+.cajon .num{position:absolute;top:6px;left:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gris)}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:26px}
+th{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--gris);text-align:left;padding:8px;border-bottom:1px solid var(--linea)}
+td{padding:10px 8px;border-bottom:1px solid var(--asfalto2)}
+td.mono{font-family:'IBM Plex Mono',monospace;color:var(--senal)}
+.tag{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 7px}
+.t-pend{background:rgba(242,194,0,.15);color:var(--senal)}
+.t-in{background:rgba(63,166,107,.15);color:var(--ok)}
+.t-out{background:var(--asfalto2);color:var(--gris)}
+.acc{background:none;border:1px solid var(--linea);color:var(--tiza);padding:4px 10px;font-size:11px;
+ cursor:pointer;font-family:'IBM Plex Mono',monospace}
+.acc:hover{border-color:var(--senal);color:var(--senal)}
+.notis{background:var(--asfalto2);padding:14px;margin-bottom:26px}
+.noti{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #32352f;font-size:13px}
+.noti:last-child{border:none}
+.noti time{font-family:'IBM Plex Mono',monospace;color:var(--gris);font-size:12px;flex-shrink:0}
+.vacio{color:var(--gris);font-size:13px;padding:14px 0}
+.err{background:rgba(226,71,59,.12);border-left:3px solid var(--alto);padding:10px;font-size:13px;margin-bottom:20px;display:none}
+a.link{color:var(--senal);font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:none;border-bottom:1px solid var(--linea)}
+/* calendario */
+.cal{background:var(--asfalto2);padding:16px;margin-bottom:26px}
+.cal-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.cal-mes{font-family:'Archivo Black',sans-serif;font-size:16px;text-transform:uppercase}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-dow{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gris);text-align:center;letter-spacing:.1em}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;
+ font-size:13px;border-radius:3px}
+.cal-day.vacio{visibility:hidden}
+.cal-day.pasado{color:var(--linea);background:rgba(255,255,255,.02)}
+.cal-day.futuro{color:var(--gris);background:rgba(255,255,255,.03)}
+.cal-day.hoy{background:var(--senal);color:#111;font-weight:700;box-shadow:0 0 0 2px var(--senal)}
+/* crear admin */
+.panel-admins{background:var(--asfalto2);padding:16px;margin-bottom:26px}
+.panel-admins form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end}
+.panel-admins label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--gris);margin-bottom:5px}
+.panel-admins input{width:100%;background:var(--asfalto);border:1px solid var(--linea);color:var(--tiza);padding:9px;
+ font-family:'IBM Plex Mono',monospace;font-size:13px}
+.panel-admins .btn{background:var(--senal);border:none;color:#111;padding:10px;font-family:'Archivo Black',sans-serif;
+ font-size:12px;letter-spacing:.05em;cursor:pointer}
+.panel-admins .btn:disabled{background:var(--linea);color:var(--gris);cursor:not-allowed}
+.panel-admins .msg{grid-column:1/-1;padding:9px;font-size:12px;border-left:3px solid;display:none}
+.panel-admins .msg.ok{border-color:var(--ok);background:rgba(63,166,107,.1);display:block}
+.panel-admins .msg.err{border-color:var(--alto);background:rgba(226,71,59,.1);display:block}
+.tipo-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--linea)}
+.tipo-row:last-child{border:none}
+.tipo-row .nombre{flex:1;font-size:13px}
+.tipo-row .precio-wrap{display:flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gris)}
+.tipo-row input{width:80px;padding:6px}
+/* campanita de notificaciones */
+.bell{position:relative;background:none;border:1px solid var(--linea);color:var(--tiza);padding:6px 12px;
+ font-size:15px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+.bell:hover{border-color:var(--senal);color:var(--senal)}
+.badge{position:absolute;top:-7px;right:-7px;background:var(--alto);color:#fff;border-radius:10px;
+ font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 5px;display:none}
+.notimodal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+ align-items:center;justify-content:center;z-index:9999;padding:20px}
+.notimodal-backdrop.show{display:flex}
+.notimodal{background:var(--asfalto2);border-top:4px solid var(--senal);max-width:420px;width:100%;
+ padding:22px;color:var(--tiza)}
+.notimodal-title{font-family:'Archivo Black',sans-serif;font-size:15px;color:var(--senal);margin-bottom:12px}
+.notimodal-lista{max-height:240px;overflow-y:auto;margin-bottom:16px}
+.notimodal-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #32352f;font-size:13px}
+.notimodal-item:last-child{border:none}
+.notimodal-item time{font-family:'IBM Plex Mono',monospace;color:var(--gris);font-size:12px;flex-shrink:0}
+.notimodal-acc{display:flex;gap:10px}
+.notimodal-btn{flex:1;padding:10px;border:1px solid var(--linea);background:none;color:var(--tiza);
+ font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:center;text-decoration:none;cursor:pointer}
+.notimodal-btn.primary{background:var(--senal);border-color:var(--senal);color:#111}
+</style>
+</head>
+<body>
+<header>
+  <h1>PANEL <span>ADMIN</span></h1>
+  <span id="saludo" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gris)"></span>
+  <a class="link" href="usuario-login.html">IR AL REGISTRO DE USUARIO →</a>
+  <button class="bell" id="btnCampana" onclick="location.href='notificaciones.html'" title="Notificaciones">
+    🔔<span class="badge" id="badgeNoLeidas">0</span>
+  </button>
+  <button class="acc" id="btnSalir" style="cursor:pointer">SALIR</button>
+  <div class="reloj" id="reloj"></div>
+</header>
+
+<main>
+  <div class="err" id="err"></div>
+
+  <div class="sedes" id="sedes"></div>
+
+  <div class="cal" id="cal"></div>
+
+  <p class="eyebrow">DASHBOARD / HOY</p>
+  <div class="grid">
+    <div class="kpi"><div class="n" id="kUsuarios">—</div><div class="l">USUARIOS REGISTRADOS</div></div>
+    <div class="kpi"><div class="n"><input id="kMax" type="number" min="1" max="30" onchange="cambiarCupo()"></div><div class="l">CANTIDAD MÁXIMA DE AUTOS</div></div>
+    <div class="kpi"><div class="n" id="kOcup">—</div><div class="l">AUTOS EN COCHERA</div></div>
+    <div class="kpi"><div class="n" id="kLibres">—</div><div class="l">CUPOS LIBRES</div></div>
+  </div>
+
+  <p class="eyebrow">CAJONES</p>
+  <div class="playa" id="playa"></div>
+
+  <p class="eyebrow">REGISTROS Y HORAS</p>
+  <table>
+    <thead><tr><th>USUARIO</th><th>CELULAR</th><th>PLACA</th><th>AVISÓ</th><th>INGRESO</th><th>SALIDA</th><th>ESTADO</th><th></th></tr></thead>
+    <tbody id="tabla"></tbody>
+  </table>
+
+  <p class="eyebrow">REPORTES</p>
+  <div class="panel-admins">
+    <form id="frmReporte" onsubmit="return false">
+      <div><label for="repDesde">DESDE</label><input id="repDesde" type="date"></div>
+      <div><label for="repHasta">HASTA</label><input id="repHasta" type="date"></div>
+      <button class="btn" type="button" onclick="descargarReporte('pdf')">DESCARGAR PDF</button>
+      <button class="btn" type="button" onclick="descargarReporte('xlsx')">DESCARGAR EXCEL</button>
+      <div class="msg" id="msgReporte"></div>
+    </form>
+  </div>
+
+  <p class="eyebrow">CLIENTES</p>
+  <div class="panel-admins">
+    <form id="frmCliente">
+      <div><label for="cNombre">NOMBRE</label><input id="cNombre" required></div>
+      <div><label for="cDni">DNI</label><input id="cDni" required pattern="\d{8}" title="8 dígitos"></div>
+      <div><label for="cCelular">CELULAR</label><input id="cCelular" required pattern="\d{9}" title="9 dígitos"></div>
+      <div><label for="cCorreo">CORREO</label><input id="cCorreo" type="email" required></div>
+      <div><label for="cPassword">CONTRASEÑA</label><input id="cPassword" type="password" required minlength="4"></div>
+      <button class="btn" id="btnCliente" type="submit">CREAR CLIENTE</button>
+      <div class="msg" id="msgCliente"></div>
+    </form>
+  </div>
+
+  <p class="eyebrow">SEPARAR ESPACIO PARA UN CLIENTE YA REGISTRADO</p>
+  <div class="panel-admins">
+    <form id="frmReservaCliente">
+      <div><label for="rDni">DNI DEL CLIENTE</label><input id="rDni" required pattern="\d{8}" title="8 dígitos"></div>
+      <div><label for="rPlaca">PLACA</label><input id="rPlaca" required style="text-transform:uppercase"></div>
+      <div><label for="rModelo">MODELO (OPCIONAL)</label><input id="rModelo" placeholder="Toyota Yaris"></div>
+      <div><label for="rTipo">TIPO DE VEHÍCULO</label><select id="rTipo"></select></div>
+      <div><label for="rHora">HORA DE LLEGADA</label><input id="rHora" type="time" value="10:00" required></div>
+      <div><label for="rDias">DÍAS (1 = solo hoy)</label><input id="rDias" type="number" min="1" max="60" value="1"></div>
+      <button class="btn" id="btnReservaCliente" type="submit">RESERVAR ESPACIO</button>
+      <div class="msg" id="msgReservaCliente"></div>
+    </form>
+  </div>
+
+  <p class="eyebrow">TIPOS DE VEHÍCULO Y PRECIOS (S/ por día)</p>
+  <div class="panel-admins">
+    <div id="tiposVehiculoLista" style="grid-column:1/-1;margin-bottom:14px"></div>
+    <form id="frmTipoNuevo">
+      <div><label for="tvNombre">NUEVO TIPO</label><input id="tvNombre" placeholder="Bicicleta" required></div>
+      <div><label for="tvPrecio">PRECIO/DÍA (S/)</label><input id="tvPrecio" type="number" min="0" step="0.5" required></div>
+      <button class="btn" id="btnTipoNuevo" type="submit">AGREGAR TIPO</button>
+      <div class="msg" id="msgTipoNuevo"></div>
+    </form>
+  </div>
+
+  <p class="eyebrow">ADMINISTRADORES (máximo 3)</p>
+  <div class="panel-admins">
+    <form id="frmAdmin">
+      <div><label for="aNombre">NOMBRE</label><input id="aNombre" required></div>
+      <div><label for="aDni">DNI</label><input id="aDni" required pattern="\d{8}" title="8 dígitos"></div>
+      <div><label for="aCelular">CELULAR</label><input id="aCelular" required pattern="\d{9}" title="9 dígitos"></div>
+      <div><label for="aCorreo">CORREO</label><input id="aCorreo" type="email" required></div>
+      <div><label for="aPassword">CONTRASEÑA</label><input id="aPassword" type="password" required minlength="4"></div>
+      <button class="btn" id="btnAdmin" type="submit">CREAR ADMIN</button>
+      <div class="msg" id="msgAdmin"></div>
+    </form>
+  </div>
+</main>
+
+<script src="js/error-modal.js"></script>
+<script>
+const API = 'http://localhost:8080/api/admin';
+const hoyISO = new Date().toISOString().slice(0, 10);
+let cupoMax = 3;
+let sedes = [];
+let sedeActual = Number(localStorage.getItem('admin_sede')) || 1;
+
+const token = localStorage.getItem('admin_token');
+if (!token) location.href = 'admin-login.html';
+saludo.textContent = 'HOLA, ' + (localStorage.getItem('admin_nombre') || '').toUpperCase();
+
+function cerrarSesion(){
+  fetch('http://localhost:8080/api/auth/logout', { method:'POST', headers:{Authorization:'Bearer '+token} }).catch(()=>{});
+  localStorage.removeItem('admin_token'); localStorage.removeItem('admin_nombre');
+  location.href = 'admin-login.html';
+}
+btnSalir.onclick = cerrarSesion;
+
+async function get(u){
+  const r = await fetch(API+u, { headers: { Authorization: 'Bearer ' + token } });
+  if (r.status === 401 || r.status === 403) { cerrarSesion(); throw new Error('sesión expirada'); }
+  if (!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+async function cargarSedes(){
+  sedes = await (await fetch('http://localhost:8080/api/sedes')).json();
+  document.getElementById('sedes').innerHTML = sedes.map(s =>
+    '<button class="sede-tab' + (s.id===sedeActual ? ' activa' : '') + '" onclick="elegirSede(' + s.id + ')">' +
+    s.nombre.toUpperCase() + '</button>').join('');
+}
+function elegirSede(id){
+  sedeActual = id;
+  localStorage.setItem('admin_sede', id);
+  cargarSedes();
+  cargar();
+}
+
+function renderCalendario(){
+  const hoy = new Date();
+  const anio = hoy.getFullYear(), mes = hoy.getMonth();
+  const nombresMes = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const primerDia = new Date(anio, mes, 1).getDay();
+  const totalDias = new Date(anio, mes + 1, 0).getDate();
+  let html = '<div class="cal-head"><div class="cal-mes">' + nombresMes[mes] + ' ' + anio + '</div>' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--gris)">HOY OPERATIVO · AYER BLOQUEADO · MAÑANA PENDIENTE</div></div>';
+  html += '<div class="cal-grid">';
+  ['D','L','M','M','J','V','S'].forEach(d => html += '<div class="cal-dow">' + d + '</div>');
+  for (let i = 0; i < primerDia; i++) html += '<div class="cal-day vacio"></div>';
+  for (let d = 1; d <= totalDias; d++) {
+    let clase = 'futuro';
+    if (d < hoy.getDate()) clase = 'pasado';
+    if (d === hoy.getDate()) clase = 'hoy';
+    html += '<div class="cal-day ' + clase + '">' + d + '</div>';
+  }
+  html += '</div>';
+  cal.innerHTML = html;
+}
+
+async function cargar(){
+  try{
+    const panel = await get('/panel?sedeId=' + sedeActual);
+    const d = panel.dashboard, movs = panel.movimientos, nots = panel.notificaciones;
+    err.style.display='none';
+    hideErrorModal();
+    cupoMax = d.cupoMaximo;
+
+    kUsuarios.textContent = d.totalUsuarios;
+    if(document.activeElement !== kMax) kMax.value = d.cupoMaximo;
+    kOcup.textContent = d.ocupados;
+    kLibres.textContent = d.libres;
+
+    const act = movs.filter(m => m.estado==='PENDIENTE' || m.estado==='EN_COCHERA');
+    playa.innerHTML = '';
+    for(let i=0;i<cupoMax;i++){
+      const m = act[i], d2 = document.createElement('div');
+      d2.className = 'cajon' + (m ? ' lleno' : '');
+      d2.innerHTML = '<span class="num">'+String(i+1).padStart(2,'0')+'</span>' + (m
+        ? '<span class="placa">'+m.placa+'</span><span class="quien">'+m.nombre+'</span>'+
+          '<span class="quien">'+(m.horaIngreso ? 'ingresó '+hora(m.horaIngreso) : 'llega '+hora(m.horaLlegada))+'</span>'
+        : '<span class="libre">LIBRE</span>');
+      playa.appendChild(d2);
+    }
+
+    tabla.innerHTML = movs.length ? movs.map(m => {
+      const tag = m.estado==='PENDIENTE' ? '<span class="tag t-pend">PENDIENTE</span>'
+                : m.estado==='EN_COCHERA' ? '<span class="tag t-in">EN COCHERA</span>'
+                : '<span class="tag t-out">'+m.estado+'</span>';
+      const acc = m.estado==='PENDIENTE'  ? '<button class="acc" onclick="accion('+m.id+',\'ingreso\')">Registrar ingreso</button>'
+                : m.estado==='EN_COCHERA' ? '<button class="acc" onclick="accion('+m.id+',\'salida\')">Registrar salida</button>' : '';
+      const viaje = (m.fechaFin && m.fechaFin > hoyISO) ? ' <span class="tag t-pend">VIAJE hasta '+m.fechaFin+'</span>' : '';
+      return '<tr><td>'+m.nombre+'</td><td class="mono">'+m.celular+'</td><td class="mono">'+m.placa+
+        '</td><td class="mono">'+hora(m.horaLlegada)+'</td><td class="mono">'+hora(m.horaIngreso)+
+        '</td><td class="mono">'+hora(m.horaSalida)+'</td><td>'+tag+viaje+'</td><td>'+acc+'</td></tr>';
+    }).join('') : '<tr><td colspan="8" class="vacio">Sin movimientos hoy. Las reservas aparecerán aquí apenas alguien avise su llegada.</td></tr>';
+
+    const noLeidas = panel.notificacionesNoLeidas || 0;
+    badgeNoLeidas.textContent = noLeidas;
+    badgeNoLeidas.style.display = noLeidas > 0 ? 'inline-block' : 'none';
+    detectarNotificacionesNuevas(nots);
+  }catch(e){
+    showErrorModal('No hay conexión con el servidor. Levanta el backend con: mvn spring-boot:run', cargar);
+  }
+}
+
+/** Guarda, por sede, el id de la última notificación ya vista en este navegador. */
+const claveUltimaNoti = sedeId => 'admin_ultima_noti_' + sedeId;
+
+function detectarNotificacionesNuevas(nots){
+  if (!nots.length) return;
+  const clave = claveUltimaNoti(sedeActual);
+  const ultimaVistaId = Number(localStorage.getItem(clave)) || 0;
+  if (ultimaVistaId === 0) {
+    // primera vez que se ve esta sede en este navegador: no reproducir notificaciones viejas
+    localStorage.setItem(clave, nots[0].id);
+    return;
+  }
+  const nuevas = nots.filter(n => n.id > ultimaVistaId);
+  if (nuevas.length) {
+    mostrarModalNotificacion(nuevas);
+    localStorage.setItem(clave, nots[0].id);
+  }
+}
+
+function mostrarModalNotificacion(lista){
+  let back = document.getElementById('notiModalBackdrop');
+  if (!back) {
+    back = document.createElement('div');
+    back.id = 'notiModalBackdrop';
+    back.className = 'notimodal-backdrop';
+    back.onclick = e => { if (e.target === back) back.classList.remove('show'); };
+    document.body.appendChild(back);
+  }
+  back.innerHTML = '<div class="notimodal">' +
+    '<div class="notimodal-title">🔔 ' + (lista.length > 1 ? lista.length + ' NOTIFICACIONES NUEVAS' : 'NOTIFICACIÓN NUEVA') + '</div>' +
+    '<div class="notimodal-lista">' + lista.map(n =>
+      '<div class="notimodal-item"><time>' + hora(n.creadoEn) + '</time><span>' + n.mensaje + '</span></div>').join('') +
+    '</div>' +
+    '<div class="notimodal-acc">' +
+      '<a class="notimodal-btn primary" href="notificaciones.html">VER TODAS</a>' +
+      '<button class="notimodal-btn" onclick="document.getElementById(\'notiModalBackdrop\').classList.remove(\'show\')">CERRAR</button>' +
+    '</div></div>';
+  back.classList.add('show');
+}
+const hora = v => v ? String(v).slice(-8,-3) || '—' : '—';
+
+async function accion(id, tipo){
+  try{
+    await fetch(API+'/reservas/'+id+'/'+tipo, {method:'POST', headers:{Authorization:'Bearer '+token}});
+    cargar();
+  }catch(e){ showErrorModal(null, () => accion(id, tipo)); }
+}
+async function cambiarCupo(){
+  try{
+    await fetch(API+'/cupo/'+sedeActual+'/'+kMax.value, {method:'PUT', headers:{Authorization:'Bearer '+token}});
+    cargar();
+  }catch(e){ showErrorModal(null, cambiarCupo); }
+}
+
+async function cargarTiposVehiculo(){
+  const lista = await (await fetch('http://localhost:8080/api/tipos-vehiculo')).json();
+  tiposVehiculoLista.innerHTML = lista.map(t =>
+    '<div class="tipo-row"><span class="nombre">' + t.nombre + '</span>' +
+    '<span class="precio-wrap">S/ <input type="number" min="0" step="0.5" value="' + Number(t.precioDia).toFixed(2) +
+    '" onchange="cambiarPrecioTipo(' + t.id + ', this.value)"> /día</span></div>').join('');
+  rTipo.innerHTML = lista.map(t => '<option value="' + t.id + '">' + t.nombre + ' — S/ ' + Number(t.precioDia).toFixed(2) + '</option>').join('');
+}
+async function cambiarPrecioTipo(id, precio){
+  try{
+    await fetch('http://localhost:8080/api/admin/tipos-vehiculo/' + id, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ precioDia: Number(precio) })
+    });
+    cargarTiposVehiculo();
+  }catch(e){ showErrorModal(null, () => cambiarPrecioTipo(id, precio)); }
+}
+
+frmTipoNuevo.onsubmit = async e => {
+  e.preventDefault();
+  msgTipoNuevo.style.display = 'none';
+  btnTipoNuevo.disabled = true;
+  try{
+    const r = await fetch('http://localhost:8080/api/admin/tipos-vehiculo', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ nombre: tvNombre.value.trim(), precioDia: Number(tvPrecio.value) })
+    });
+    const d = await r.json();
+    msgTipoNuevo.className = 'msg ' + (r.ok ? 'ok' : 'err');
+    msgTipoNuevo.textContent = r.ok ? 'Tipo de vehículo agregado.' : d.error;
+    msgTipoNuevo.style.display = 'block';
+    if (r.ok) { frmTipoNuevo.reset(); cargarTiposVehiculo(); }
+  }catch(err){
+    showErrorModal(null, () => frmTipoNuevo.requestSubmit());
+  }
+  btnTipoNuevo.disabled = false;
+};
+
+frmCliente.onsubmit = async e => {
+  e.preventDefault();
+  msgCliente.style.display = 'none';
+  btnCliente.disabled = true;
+  const body = {
+    nombre: cNombre.value.trim(), dni: cDni.value.trim(), celular: cCelular.value.trim(),
+    correo: cCorreo.value.trim(), password: cPassword.value
+  };
+  try{
+    const r = await fetch('http://localhost:8080/api/auth/crear-usuario', {
+      method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+token}, body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    msgCliente.className = 'msg ' + (r.ok ? 'ok' : 'err');
+    msgCliente.textContent = r.ok ? 'Cliente "' + d.nombre + '" creado correctamente.' : d.error;
+    msgCliente.style.display = 'block';
+    if (r.ok) frmCliente.reset();
+  }catch(err){
+    showErrorModal(null, () => frmCliente.requestSubmit());
+  }
+  btnCliente.disabled = false;
+};
+
+frmReservaCliente.onsubmit = async e => {
+  e.preventDefault();
+  msgReservaCliente.style.display = 'none';
+  btnReservaCliente.disabled = true;
+  const body = {
+    dni: rDni.value.trim(), sedeId: sedeActual, placa: rPlaca.value.trim().toUpperCase(),
+    modelo: rModelo.value.trim(), tipoVehiculoId: Number(rTipo.value) || 1,
+    horaLlegada: rHora.value + ':00', dias: Number(rDias.value) || 1
+  };
+  try{
+    const r = await fetch(API + '/reservas', {
+      method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+token}, body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    msgReservaCliente.className = 'msg ' + (r.ok ? 'ok' : 'err');
+    msgReservaCliente.textContent = r.ok ? d.mensaje : d.error;
+    msgReservaCliente.style.display = 'block';
+    if (r.ok) { frmReservaCliente.reset(); rHora.value = '10:00'; rDias.value = 1; cargar(); }
+  }catch(err){
+    showErrorModal(null, () => frmReservaCliente.requestSubmit());
+  }
+  btnReservaCliente.disabled = false;
+};
+
+frmAdmin.onsubmit = async e => {
+  e.preventDefault();
+  msgAdmin.style.display = 'none';
+  btnAdmin.disabled = true;
+  const body = {
+    nombre: aNombre.value.trim(), dni: aDni.value.trim(), celular: aCelular.value.trim(),
+    correo: aCorreo.value.trim(), password: aPassword.value
+  };
+  try{
+    const r = await fetch('http://localhost:8080/api/auth/crear-admin', {
+      method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+token}, body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    msgAdmin.className = 'msg ' + (r.ok ? 'ok' : 'err');
+    msgAdmin.textContent = r.ok ? 'Administrador "' + d.nombre + '" creado correctamente.' : d.error;
+    msgAdmin.style.display = 'block';
+    if (r.ok) frmAdmin.reset();
+  }catch(err){
+    showErrorModal(null, () => frmAdmin.requestSubmit());
+  }
+  btnAdmin.disabled = false;
+};
+
+function precargarFechasReporte(){
+  const hoy = new Date();
+  const primero = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const ultimo = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+  const fmt = d => d.toISOString().slice(0, 10);
+  repDesde.value = fmt(primero);
+  repHasta.value = fmt(ultimo);
+}
+
+async function descargarReporte(tipo){
+  msgReporte.style.display = 'none';
+  try{
+    const qs = 'sedeId=' + sedeActual + '&desde=' + repDesde.value + '&hasta=' + repHasta.value;
+    const r = await fetch('http://localhost:8080/api/admin/reportes/estadias.' + tipo + '?' + qs,
+      { headers: { Authorization: 'Bearer ' + token } });
+    if (r.status === 401 || r.status === 403) { cerrarSesion(); return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'estadias.' + tipo;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }catch(e){
+    msgReporte.className = 'msg err';
+    msgReporte.textContent = 'No se pudo generar el reporte. Verifica la conexión con el backend.';
+    msgReporte.style.display = 'block';
+  }
+}
+
+precargarFechasReporte();
+renderCalendario();
+cargarSedes();
+cargarTiposVehiculo();
+setInterval(()=> reloj.textContent = new Date().toLocaleTimeString('es-PE'), 1000);
+setInterval(cargar, 5000);   // el panel se refresca solo
+cargar();
+</script>
+</body>
+</html>

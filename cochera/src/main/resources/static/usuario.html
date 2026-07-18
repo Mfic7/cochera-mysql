@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cochera — Registro y aviso de llegada</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--asfalto:#1b1d1c;--asfalto2:#262927;--linea:#3a3e3b;--senal:#f2c200;--alto:#e2473b;--ok:#3fa66b;--tiza:#e8e6e0;--gris:#8f938d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--asfalto);color:var(--tiza);font-family:'IBM Plex Sans',sans-serif;
+ background-image:repeating-linear-gradient(90deg,transparent 0 78px,rgba(255,255,255,.02) 78px 80px)}
+header{border-bottom:3px solid var(--senal);padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{font-family:'Archivo Black',sans-serif;font-size:20px}h1 span{color:var(--senal)}
+a.link{color:var(--senal);font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:none;border-bottom:1px solid var(--linea)}
+.acc{background:none;border:1px solid var(--linea);color:var(--tiza);padding:6px 12px;font-size:11px;
+ cursor:pointer;font-family:'IBM Plex Mono',monospace}
+.acc:hover{border-color:var(--senal);color:var(--senal)}
+main{max-width:560px;margin:0 auto;padding:28px 22px 60px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--gris);margin-bottom:12px}
+.saludo{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--gris);margin-bottom:22px}
+.saludo b{color:var(--tiza)}
+/* tablero de cupos: la firma de esta página */
+.tablero{background:var(--asfalto2);border-left:4px solid var(--senal);padding:16px;margin-bottom:22px;
+ display:flex;align-items:center;gap:16px}
+.tablero .n{font-family:'Archivo Black',sans-serif;font-size:44px;line-height:1;color:var(--senal)}
+.tablero.lleno{border-color:var(--alto)}.tablero.lleno .n{color:var(--alto)}
+.tablero .l{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--gris)}
+form{background:var(--asfalto2);padding:22px}
+label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--gris);margin:14px 0 5px}
+label:first-child{margin-top:0}
+input,select{width:100%;background:var(--asfalto);border:1px solid var(--linea);color:var(--tiza);padding:11px;
+ font-family:'IBM Plex Mono',monospace;font-size:14px}
+input:focus,select:focus{outline:2px solid var(--senal);outline-offset:1px}
+.fila{display:flex;gap:12px}.fila>div{flex:1}
+.btn{margin-top:22px;width:100%;background:var(--senal);border:none;color:#111;padding:14px;
+ font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:.05em;cursor:pointer}
+.btn:disabled{background:var(--linea);color:var(--gris);cursor:not-allowed}
+.msg{margin-top:16px;padding:11px;font-size:13px;border-left:3px solid;display:none}
+.msg.ok{border-color:var(--ok);background:rgba(63,166,107,.1);display:block}
+.msg.err{border-color:var(--alto);background:rgba(226,71,59,.1);display:block}
+.horario{font-size:11px;color:var(--gris);margin-top:6px}
+.viaje{display:flex;align-items:center;gap:8px;margin-top:16px}
+.viaje input[type=checkbox]{width:auto;accent-color:var(--senal)}
+.viaje label{margin:0;text-transform:none;letter-spacing:0;font-size:13px;color:var(--tiza)}
+.viaje-dias{display:none;margin-top:12px}
+.recordatorio{background:rgba(242,194,0,.1);border-left:4px solid var(--senal);padding:12px 16px;
+ margin-bottom:16px;font-size:13px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <h1>COCHERA <span>REGISTRO</span></h1>
+  <button class="acc" id="btnSalir">SALIR</button>
+</header>
+
+<main>
+  <p class="saludo">Hola, <b id="nombreUsuario">—</b></p>
+
+  <div id="recordatorios"></div>
+
+  <p class="eyebrow">DISPONIBILIDAD AHORA</p>
+  <div class="tablero" id="tablero">
+    <div class="n" id="tLibres">—</div>
+    <div><div class="l" id="tTexto">CONSULTANDO CUPOS…</div></div>
+  </div>
+
+  <p class="eyebrow">AVISA TU HORA DE LLEGADA</p>
+  <form id="frm">
+    <label for="sede">¿A QUÉ COCHERA VAS?</label>
+    <select id="sede" required></select>
+
+    <div id="vehiculoConocido" style="display:none">
+      <label for="vehiculoSel">ELIGE TU VEHÍCULO</label>
+      <select id="vehiculoSel"></select>
+    </div>
+
+    <div id="filaPlacaModelo">
+      <label for="placa">PLACA</label>
+      <input id="placa" placeholder="ABC-123" style="text-transform:uppercase">
+
+      <div class="fila">
+        <div>
+          <label for="marca">MARCA</label>
+          <select id="marca"></select>
+        </div>
+        <div>
+          <label for="modeloSel">MODELO</label>
+          <select id="modeloSel"></select>
+        </div>
+      </div>
+      <div id="modeloOtroWrap" style="display:none">
+        <label for="modeloOtro">¿CUÁL MODELO?</label>
+        <input id="modeloOtro" placeholder="Escribe el modelo">
+      </div>
+
+      <label for="tipoVehiculo">TIPO DE VEHÍCULO</label>
+      <select id="tipoVehiculo"></select>
+    </div>
+
+    <label for="horaLlegada">HORA DE LLEGADA</label>
+    <input id="horaLlegada" type="time" required value="10:00">
+    <p class="horario">Solo se puede avisar llegada entre las 8:00 am y las 11:00 pm.</p>
+
+    <div class="viaje">
+      <input type="checkbox" id="esViaje">
+      <label for="esViaje">Reservar cochera varios días (me voy de viaje)</label>
+    </div>
+    <div class="viaje-dias" id="viajeDias">
+      <label for="dias">¿CUÁNTOS DÍAS SE QUEDA? (incluye hoy)</label>
+      <input id="dias" type="number" min="1" max="60" value="2">
+    </div>
+
+    <button class="btn" id="btn">AVISAR MI LLEGADA</button>
+    <div class="msg" id="msg"></div>
+  </form>
+</main>
+
+<script src="js/error-modal.js"></script>
+<script>
+const API = 'http://localhost:8080/api/usuario';
+
+const CATALOGO_AUTOS = {
+  'Toyota': ['Yaris', 'Corolla', 'Raize', 'Hilux', 'RAV4'],
+  'Kia': ['Rio', 'Soul', 'Sportage', 'Picanto'],
+  'Hyundai': ['Accent', 'Tucson', 'Elantra', 'Grand i10'],
+  'Nissan': ['Sentra', 'Versa', 'X-Trail'],
+  'Suzuki': ['Swift', 'Vitara', 'Alto'],
+  'Chevrolet': ['Sail', 'Spark'],
+  'Volkswagen': ['Gol', 'Vento'],
+  'Honda': ['Civic', 'CR-V'],
+  'Mitsubishi': ['Montero', 'Lancer'],
+  'Otra marca': []
+};
+
+const token = localStorage.getItem('user_token');
+if (!token) location.href = 'usuario-login.html';
+nombreUsuario.textContent = localStorage.getItem('user_nombre') || '';
+
+function cargarMarcas(){
+  marca.innerHTML = Object.keys(CATALOGO_AUTOS).map(m => '<option value="'+m+'">'+m+'</option>').join('');
+  actualizarModelos();
+  marca.onchange = actualizarModelos;
+  modeloSel.onchange = actualizarModeloOtro;
+}
+function actualizarModelos(){
+  const modelos = CATALOGO_AUTOS[marca.value] || [];
+  modeloSel.innerHTML = modelos.map(m => '<option value="'+m+'">'+m+'</option>').join('')
+    + '<option value="__otro__">Otro modelo</option>';
+  actualizarModeloOtro();
+}
+function actualizarModeloOtro(){
+  modeloOtroWrap.style.display = modeloSel.value === '__otro__' ? 'block' : 'none';
+}
+function modeloTexto(){
+  const modelo = modeloSel.value === '__otro__' ? modeloOtro.value.trim() : modeloSel.value;
+  return marca.value === 'Otra marca' ? modelo : (marca.value + (modelo ? ' ' + modelo : '')).trim();
+}
+
+async function cargarTiposVehiculo(){
+  try{
+    const lista = await (await fetch('http://localhost:8080/api/tipos-vehiculo')).json();
+    tipoVehiculo.innerHTML = lista.map(t =>
+      '<option value="'+t.id+'">'+t.nombre+' — S/ '+Number(t.precioDia).toFixed(2)+'/día</option>').join('');
+  }catch(e){ /* si falla, se envía sin tipo y el backend usa "Auto" por defecto */ }
+}
+
+async function cargarRecordatorios(){
+  try{
+    const lista = await (await fetch(API+'/recordatorios', { headers:{Authorization:'Bearer '+token} })).json();
+    recordatorios.innerHTML = lista.map(r =>
+      '<div class="recordatorio">🔔 Recordatorio: tu auto <b>'+r.placa+'</b> sigue reservado en '+r.sede+
+      ' hasta el '+r.fechaFin+'.</div>').join('');
+  }catch(e){ /* si falla, simplemente no se muestra el recordatorio */ }
+}
+
+function cerrarSesion(){
+  fetch('http://localhost:8080/api/auth/logout', { method:'POST', headers:{Authorization:'Bearer '+token} }).catch(()=>{});
+  localStorage.removeItem('user_token'); localStorage.removeItem('user_nombre');
+  location.href = 'usuario-login.html';
+}
+btnSalir.onclick = cerrarSesion;
+
+esViaje.onchange = () => { viajeDias.style.display = esViaje.checked ? 'block' : 'none'; };
+
+async function cargarSedes(){
+  const lista = await (await fetch('http://localhost:8080/api/sedes')).json();
+  const guardada = Number(localStorage.getItem('user_sede')) || lista[0].id;
+  sede.innerHTML = lista.map(s => '<option value="'+s.id+'">'+s.nombre+'</option>').join('');
+  sede.value = lista.some(s => s.id === guardada) ? guardada : lista[0].id;
+  sede.onchange = () => { localStorage.setItem('user_sede', sede.value); verCupo(); };
+  verCupo();
+}
+
+async function cargarMisVehiculos(){
+  try{
+    const vehiculos = await (await fetch(API+'/mis-vehiculos', { headers:{Authorization:'Bearer '+token} })).json();
+    if (vehiculos.length > 0) {
+      vehiculoSel.innerHTML = vehiculos.map(v =>
+        '<option value="'+v.placa+'">'+v.placa+(v.modelo ? ' — '+v.modelo : '')+'</option>').join('')
+        + '<option value="__nuevo__">+ Otro vehículo nuevo</option>';
+      vehiculoConocido.style.display = 'block';
+      filaPlacaModelo.style.display = 'none';
+      vehiculoSel.onchange = actualizarVisibilidadVehiculo;
+      actualizarVisibilidadVehiculo();
+    }
+  }catch(e){ /* si falla, se queda con el formulario de placa/modelo de siempre */ }
+}
+function actualizarVisibilidadVehiculo(){
+  const esNuevo = vehiculoSel.value === '__nuevo__';
+  filaPlacaModelo.style.display = esNuevo ? 'block' : 'none';
+}
+
+async function verCupo(){
+  try{
+    const c = await (await fetch(API+'/cupo?sedeId='+sede.value)).json();
+    tLibres.textContent = c.libres;
+    tablero.classList.toggle('lleno', !c.hayCupo);
+    tTexto.textContent = c.hayCupo
+      ? 'CUPOS LIBRES DE '+c.cupoMaximo
+      : 'COCHERA LLENA — MÁXIMO '+c.cupoMaximo+' AUTOS';
+    btn.disabled = !c.hayCupo;
+    btn.textContent = c.hayCupo ? 'AVISAR MI LLEGADA' : 'SIN CUPOS';
+  }catch(e){
+    tLibres.textContent='!'; tTexto.textContent='SIN CONEXIÓN AL SERVIDOR';
+    btn.disabled = true;
+  }
+}
+
+frm.onsubmit = async e => {
+  e.preventDefault();
+  const usaVehiculoConocido = vehiculoConocido.style.display !== 'none' && vehiculoSel.value !== '__nuevo__';
+  const placaFinal = usaVehiculoConocido ? vehiculoSel.value : placa.value.trim().toUpperCase();
+  const modeloFinal = usaVehiculoConocido ? '' : modeloTexto();
+  if (!placaFinal) {
+    msg.className='msg err'; msg.textContent='Indica la placa del vehículo.'; msg.style.display='block';
+    return;
+  }
+  btn.disabled = true;
+  const body = {
+    sedeId: Number(sede.value),
+    placa: placaFinal,
+    modelo: modeloFinal,
+    horaLlegada: horaLlegada.value + ':00',
+    dias: esViaje.checked ? Number(dias.value) : 1,
+    tipoVehiculoId: Number(tipoVehiculo.value) || 1
+  };
+  try{
+    const r = await fetch(API+'/reservar', {
+      method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+token}, body: JSON.stringify(body)
+    });
+    if (r.status === 401 || r.status === 403) { cerrarSesion(); return; }
+    const d = await r.json();
+    if(r.ok){
+      msg.className='msg ok';
+      msg.textContent = d.mensaje + ' Quedan ' + d.libres + ' cupos.';
+      placa.value=''; modeloOtro.value=''; horaLlegada.value='10:00';
+      esViaje.checked = false; viajeDias.style.display = 'none'; dias.value = 2;
+      cargarMisVehiculos();
+      cargarRecordatorios();
+    }else{
+      msg.className='msg err';
+      msg.textContent = d.error;
+    }
+    msg.style.display = 'block';
+  }catch(err){
+    showErrorModal('No se pudo conectar con el servidor. Levanta el backend e intenta de nuevo.', () => frm.requestSubmit());
+  }
+  verCupo();
+};
+
+cargarMarcas();
+cargarTiposVehiculo();
+cargarSedes();
+cargarMisVehiculos();
+cargarRecordatorios();
+setInterval(verCupo, 5000);
+</script>
+</body>
+</html>

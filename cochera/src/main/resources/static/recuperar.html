@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cochera — Recuperar contraseña</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--asfalto:#1b1d1c;--asfalto2:#262927;--linea:#3a3e3b;--senal:#f2c200;--alto:#e2473b;--ok:#3fa66b;--tiza:#e8e6e0;--gris:#8f938d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--asfalto);color:var(--tiza);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;
+ background-image:repeating-linear-gradient(90deg,transparent 0 78px,rgba(255,255,255,.02) 78px 80px)}
+header{border-bottom:3px solid var(--senal);padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{font-family:'Archivo Black',sans-serif;font-size:20px}h1 span{color:var(--senal)}
+a.link{color:var(--senal);font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:none;border-bottom:1px solid var(--linea)}
+main{max-width:460px;margin:0 auto;padding:28px 22px 60px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--gris);margin-bottom:6px}
+.ayuda{font-size:12px;color:var(--gris);margin-bottom:18px;line-height:1.5}
+form{background:var(--asfalto2);padding:22px}
+label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--gris);margin:14px 0 5px}
+label:first-child{margin-top:0}
+input{width:100%;background:var(--asfalto);border:1px solid var(--linea);color:var(--tiza);padding:11px;
+ font-family:'IBM Plex Mono',monospace;font-size:14px}
+input:focus{outline:2px solid var(--senal);outline-offset:1px}
+.fila{display:flex;gap:12px}.fila>div{flex:1}
+.btn{margin-top:22px;width:100%;background:var(--senal);border:none;color:#111;padding:14px;
+ font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:.05em;cursor:pointer}
+.btn:disabled{background:var(--linea);color:var(--gris);cursor:not-allowed}
+.msg{margin-top:16px;padding:11px;font-size:13px;border-left:3px solid;display:none}
+.msg.ok{border-color:var(--ok);background:rgba(63,166,107,.1);display:block}
+.msg.err{border-color:var(--alto);background:rgba(226,71,59,.1);display:block}
+.footer{margin-top:16px;text-align:center;font-size:12px;color:var(--gris)}
+</style>
+</head>
+<body>
+<header>
+  <h1>COCHERA <span id="tituloRol">RECUPERAR</span></h1>
+  <a class="link" id="volverLogin" href="usuario-login.html">← Volver al ingreso</a>
+</header>
+
+<main>
+  <p class="eyebrow">RECUPERAR CONTRASEÑA</p>
+  <p class="ayuda">Como esta demo no envía correos, verificamos tu identidad con los mismos datos de tu registro (DNI, correo y celular) antes de dejarte poner una contraseña nueva.</p>
+  <form id="frm">
+    <label for="dni">DNI</label>
+    <input id="dni" required pattern="\d{8}" title="8 dígitos" placeholder="45871236">
+
+    <div class="fila">
+      <div>
+        <label for="correo">CORREO REGISTRADO</label>
+        <input id="correo" type="email" required placeholder="luis@mail.com">
+      </div>
+      <div>
+        <label for="celular">CELULAR REGISTRADO</label>
+        <input id="celular" required pattern="\d{9}" title="9 dígitos" placeholder="987654321">
+      </div>
+    </div>
+
+    <div class="fila">
+      <div>
+        <label for="password1">CONTRASEÑA NUEVA</label>
+        <input id="password1" type="password" required minlength="4" placeholder="mínimo 4 caracteres">
+      </div>
+      <div>
+        <label for="password2">REPETIR CONTRASEÑA</label>
+        <input id="password2" type="password" required minlength="4" placeholder="mínimo 4 caracteres">
+      </div>
+    </div>
+
+    <button class="btn" id="btn">ACTUALIZAR CONTRASEÑA</button>
+    <div class="msg" id="msg"></div>
+  </form>
+  <p class="footer" id="footer"></p>
+</main>
+
+<script src="js/error-modal.js"></script>
+<script>
+const API = 'http://localhost:8080/api/auth';
+const params = new URLSearchParams(location.search);
+const rol = params.get('rol') === 'admin' ? 'admin' : 'usuario';
+const loginPage = rol === 'admin' ? 'admin-login.html' : 'usuario-login.html';
+
+tituloRol.textContent = rol === 'admin' ? 'ADMIN' : 'RECUPERAR';
+volverLogin.href = loginPage;
+footer.innerHTML = '¿Ya la recuperaste? <a class="link" href="' + loginPage + '">Inicia sesión</a>';
+
+frm.onsubmit = async e => {
+  e.preventDefault();
+  msg.style.display = 'none';
+  if (password1.value !== password2.value) {
+    msg.className = 'msg err'; msg.textContent = 'Las contraseñas no coinciden.'; msg.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  const body = {
+    dni: dni.value.trim(), correo: correo.value.trim(), celular: celular.value.trim(),
+    rol: rol, passwordNueva: password1.value
+  };
+  try {
+    const r = await fetch(API + '/recuperar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (r.ok) {
+      msg.className = 'msg ok';
+      msg.textContent = 'Contraseña actualizada. Ya puedes iniciar sesión con tu nueva contraseña.';
+      msg.style.display = 'block';
+      frm.reset();
+    } else {
+      msg.className = 'msg err';
+      msg.textContent = d.error || 'No se pudo actualizar la contraseña.';
+      msg.style.display = 'block';
+    }
+  } catch (err) {
+    showErrorModal(null, () => frm.requestSubmit());
+  }
+  btn.disabled = false;
+};
+</script>
+</body>
+</html>

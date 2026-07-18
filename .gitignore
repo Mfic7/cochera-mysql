@@ -1,0 +1,11 @@
+# Maven
+cochera/target/
+
+# IDE / herramientas locales
+.claude/settings.local.json
+*.iml
+.idea/
+
+# Sistema operativo
+Thumbs.db
+.DS_Store

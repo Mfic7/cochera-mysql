@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cochera — Notificaciones</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--asfalto:#1b1d1c;--asfalto2:#262927;--linea:#3a3e3b;--senal:#f2c200;--alto:#e2473b;--ok:#3fa66b;--tiza:#e8e6e0;--gris:#8f938d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--asfalto);color:var(--tiza);font-family:'IBM Plex Sans',sans-serif;
+ background-image:repeating-linear-gradient(90deg,transparent 0 78px,rgba(255,255,255,.02) 78px 80px)}
+header{border-bottom:3px solid var(--senal);padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{font-family:'Archivo Black',sans-serif;font-size:20px}h1 span{color:var(--senal)}
+a.link{color:var(--senal);font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:none;border-bottom:1px solid var(--linea)}
+main{max-width:720px;margin:0 auto;padding:24px 22px 60px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--gris);margin-bottom:10px}
+.sedes{display:flex;gap:8px;margin-bottom:22px}
+.sede-tab{background:var(--asfalto2);border:1px solid var(--linea);color:var(--gris);padding:9px 16px;
+ font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;cursor:pointer}
+.sede-tab.activa{border-color:var(--senal);color:var(--senal);background:rgba(242,194,0,.08)}
+.notis{background:var(--asfalto2);padding:14px}
+.noti{display:flex;gap:14px;padding:12px 6px;border-bottom:1px solid #32352f;font-size:14px;align-items:baseline}
+.noti:last-child{border:none}
+.noti time{font-family:'IBM Plex Mono',monospace;color:var(--gris);font-size:12px;flex-shrink:0;width:52px}
+.noti .tipo{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 7px;flex-shrink:0}
+.t-LLEGADA{background:rgba(242,194,0,.15);color:var(--senal)}
+.t-INGRESO{background:rgba(63,166,107,.15);color:var(--ok)}
+.t-SALIDA{background:var(--asfalto);color:var(--gris)}
+.t-CUPO_LLENO,.t-RECHAZO{background:rgba(226,71,59,.15);color:var(--alto)}
+.t-RECORDATORIO{background:rgba(242,194,0,.1);color:var(--senal)}
+.vacio{color:var(--gris);font-size:13px;padding:14px 0}
+.err{background:rgba(226,71,59,.12);border-left:3px solid var(--alto);padding:10px;font-size:13px;margin-bottom:20px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>NOTIFICACIONES</h1>
+  <a class="link" href="admin.html">← Volver al panel</a>
+</header>
+
+<main>
+  <div class="err" id="err"></div>
+  <div class="sedes" id="sedes"></div>
+  <p class="eyebrow">TODAS (se marcan como leídas al abrir esta página)</p>
+  <div class="notis" id="notis"></div>
+</main>
+
+<script src="js/error-modal.js"></script>
+<script>
+const API = 'http://localhost:8080/api/admin';
+let sedeActual = Number(localStorage.getItem('admin_sede')) || 1;
+
+const token = localStorage.getItem('admin_token');
+if (!token) location.href = 'admin-login.html';
+
+async function cargarSedes(){
+  const sedes = await (await fetch('http://localhost:8080/api/sedes')).json();
+  document.getElementById('sedes').innerHTML = sedes.map(s =>
+    '<button class="sede-tab' + (s.id===sedeActual ? ' activa' : '') + '" onclick="elegirSede(' + s.id + ')">' +
+    s.nombre.toUpperCase() + '</button>').join('');
+}
+function elegirSede(id){
+  sedeActual = id;
+  localStorage.setItem('admin_sede', id);
+  cargarSedes();
+  cargar();
+}
+const hora = v => v ? String(v).slice(-8,-3) || '—' : '—';
+
+async function cargar(){
+  try{
+    const r = await fetch(API + '/panel?sedeId=' + sedeActual, { headers: { Authorization: 'Bearer ' + token } });
+    if (r.status === 401 || r.status === 403) { location.href = 'admin-login.html'; return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const panel = await r.json();
+    err.style.display = 'none';
+    hideErrorModal();
+
+    const nots = panel.notificaciones;
+    notis.innerHTML = nots.length ? nots.map(n =>
+      '<div class="noti"><time>' + hora(n.creadoEn) + '</time>' +
+      '<span class="tipo t-' + n.tipo + '">' + n.tipo + '</span>' +
+      '<span>' + n.mensaje + '</span></div>').join('')
+      : '<p class="vacio">Sin notificaciones todavía.</p>';
+
+    // Se marcan como leídas al ver esta página (así la campanita del panel deja de mostrar el número).
+    fetch(API + '/notificaciones/marcar-leidas?sedeId=' + sedeActual,
+      { method: 'POST', headers: { Authorization: 'Bearer ' + token } }).catch(()=>{});
+    localStorage.setItem('admin_ultima_noti_' + sedeActual, nots.length ? nots[0].id : 0);
+  }catch(e){
+    showErrorModal('No hay conexión con el servidor. Levanta el backend con: mvn spring-boot:run', cargar);
+  }
+}
+
+cargarSedes();
+cargar();
+</script>
+</body>
+</html>
