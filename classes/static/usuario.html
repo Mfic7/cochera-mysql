@@ -118,7 +118,7 @@ input:focus,select:focus{outline:2px solid var(--senal);outline-offset:1px}
 
 <script src="js/error-modal.js"></script>
 <script>
-const API = '/api/usuario';
+const API = 'http://localhost:8080/api/usuario';
 
 const CATALOGO_AUTOS = {
   'Toyota': ['Yaris', 'Corolla', 'Raize', 'Hilux', 'RAV4'],
@@ -159,7 +159,7 @@ function modeloTexto(){
 
 async function cargarTiposVehiculo(){
   try{
-    const lista = await (await fetch('/api/tipos-vehiculo')).json();
+    const lista = await (await fetch('http://localhost:8080/api/tipos-vehiculo')).json();
     tipoVehiculo.innerHTML = lista.map(t =>
       '<option value="'+t.id+'">'+t.nombre+' — S/ '+Number(t.precioDia).toFixed(2)+'/día</option>').join('');
   }catch(e){ /* si falla, se envía sin tipo y el backend usa "Auto" por defecto */ }
@@ -175,7 +175,7 @@ async function cargarRecordatorios(){
 }
 
 function cerrarSesion(){
-  fetch('/api/auth/logout', { method:'POST', headers:{Authorization:'Bearer '+token} }).catch(()=>{});
+  fetch('http://localhost:8080/api/auth/logout', { method:'POST', headers:{Authorization:'Bearer '+token} }).catch(()=>{});
   localStorage.removeItem('user_token'); localStorage.removeItem('user_nombre');
   location.href = 'usuario-login.html';
 }
@@ -184,7 +184,7 @@ btnSalir.onclick = cerrarSesion;
 esViaje.onchange = () => { viajeDias.style.display = esViaje.checked ? 'block' : 'none'; };
 
 async function cargarSedes(){
-  const lista = await (await fetch('/api/sedes')).json();
+  const lista = await (await fetch('http://localhost:8080/api/sedes')).json();
   const guardada = Number(localStorage.getItem('user_sede')) || lista[0].id;
   sede.innerHTML = lista.map(s => '<option value="'+s.id+'">'+s.nombre+'</option>').join('');
   sede.value = lista.some(s => s.id === guardada) ? guardada : lista[0].id;

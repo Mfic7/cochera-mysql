@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cochera — Reportes</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--asfalto:#1b1d1c;--asfalto2:#262927;--linea:#3a3e3b;--senal:#f2c200;--alto:#e2473b;--ok:#3fa66b;--tiza:#e8e6e0;--gris:#8f938d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--asfalto);color:var(--tiza);font-family:'IBM Plex Sans',sans-serif;
+ background-image:repeating-linear-gradient(90deg,transparent 0 78px,rgba(255,255,255,.02) 78px 80px)}
+header{border-bottom:3px solid var(--senal);padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{font-family:'Archivo Black',sans-serif;font-size:20px}h1 span{color:var(--senal)}
+a.link{color:var(--senal);font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:none;border-bottom:1px solid var(--linea)}
+main{max-width:640px;margin:0 auto;padding:28px 22px 60px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--gris);margin-bottom:12px}
+form{background:var(--asfalto2);padding:22px}
+label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--gris);margin:14px 0 5px}
+input,select{width:100%;background:var(--asfalto);border:1px solid var(--linea);color:var(--tiza);padding:11px;
+ font-family:'IBM Plex Mono',monospace;font-size:14px}
+input:focus,select:focus{outline:2px solid var(--senal);outline-offset:1px}
+.fila{display:flex;gap:12px}.fila>div{flex:1}
+.btns{display:flex;gap:12px;margin-top:22px}
+.btn{flex:1;background:var(--senal);border:none;color:#111;padding:14px;
+ font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:.05em;cursor:pointer}
+.msg{margin-top:16px;padding:11px;font-size:13px;border-left:3px solid;display:none}
+.msg.err{border-color:var(--alto);background:rgba(226,71,59,.1);display:block}
+</style>
+</head>
+<body>
+<header>
+  <h1>REPORTES <span>DE ESTADÍAS</span></h1>
+  <a class="link" href="admin.html">← Volver al panel</a>
+</header>
+
+<main>
+  <p class="eyebrow">SEDE Y RANGO DE FECHAS</p>
+  <form onsubmit="return false">
+    <label for="repSede">SEDE</label>
+    <select id="repSede"></select>
+    <div class="fila">
+      <div><label for="repDesde">DESDE</label><input id="repDesde" type="date"></div>
+      <div><label for="repHasta">HASTA</label><input id="repHasta" type="date"></div>
+    </div>
+    <div class="btns">
+      <button class="btn" type="button" onclick="descargarReporte('pdf')">DESCARGAR PDF</button>
+      <button class="btn" type="button" onclick="descargarReporte('xlsx')">DESCARGAR EXCEL</button>
+    </div>
+    <div class="msg" id="msgReporte"></div>
+  </form>
+</main>
+
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) location.href = 'admin-login.html';
+
+async function cargarSedes(){
+  const sedes = await (await fetch('http://localhost:8080/api/sedes')).json();
+  const actual = Number(localStorage.getItem('admin_sede')) || 1;
+  repSede.innerHTML = sedes.map(s =>
+    '<option value="'+s.id+'"'+(s.id===actual?' selected':'')+'>'+s.nombre+'</option>').join('');
+}
+
+function precargarFechas(){
+  const hoy = new Date();
+  const primero = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const ultimo = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+  const fmt = d => d.toISOString().slice(0, 10);
+  repDesde.value = fmt(primero);
+  repHasta.value = fmt(ultimo);
+}
+
+async function descargarReporte(tipo){
+  msgReporte.style.display = 'none';
+  try{
+    const qs = 'sedeId=' + repSede.value + '&desde=' + repDesde.value + '&hasta=' + repHasta.value;
+    const r = await fetch('http://localhost:8080/api/admin/reportes/estadias.' + tipo + '?' + qs,
+      { headers: { Authorization: 'Bearer ' + token } });
+    if (r.status === 401 || r.status === 403) { location.href = 'admin-login.html'; return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'estadias.' + tipo;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }catch(e){
+    msgReporte.className = 'msg err';
+    msgReporte.textContent = 'No se pudo generar el reporte. Verifica la conexión con el backend.';
+    msgReporte.style.display = 'block';
+  }
+}
+
+cargarSedes();
+precargarFechas();
+</script>
+</body>
+</html>

@@ -26,19 +26,21 @@ public class UsuarioService {
 
     public Optional<UsuarioRow> buscarPorDniYRol(String dni, String rol) {
         List<Map<String, Object>> filas = db.queryForList(
-                "SELECT id, nombre, password FROM usuario WHERE dni=? AND rol=?", dni, rol);
+                "SELECT id, nombre, password, estado FROM usuario WHERE dni=? AND rol=?", dni, rol);
         if (filas.isEmpty()) return Optional.empty();
         Map<String, Object> u = filas.get(0);
-        return Optional.of(new UsuarioRow((Integer) u.get("id"), (String) u.get("nombre"), (String) u.get("password")));
+        return Optional.of(new UsuarioRow((Integer) u.get("id"), (String) u.get("nombre"),
+                (String) u.get("password"), (String) u.get("estado")));
     }
 
     /** Cliente ya registrado (rol USUARIO) que el admin busca por DNI para reservarle un espacio. */
     public Optional<UsuarioRow> buscarClientePorDni(String dni) {
         List<Map<String, Object>> filas = db.queryForList(
-                "SELECT id, nombre FROM usuario WHERE dni=? AND rol='USUARIO'", dni);
+                "SELECT id, nombre, estado FROM usuario WHERE dni=? AND rol='USUARIO'", dni);
         if (filas.isEmpty()) return Optional.empty();
         Map<String, Object> u = filas.get(0);
-        return Optional.of(new UsuarioRow((Integer) u.get("id"), (String) u.get("nombre"), null));
+        return Optional.of(new UsuarioRow((Integer) u.get("id"), (String) u.get("nombre"),
+                null, (String) u.get("estado")));
     }
 
     public boolean existeDni(String dni) {
@@ -49,6 +51,55 @@ public class UsuarioService {
     public boolean existeCorreo(String correo) {
         Integer n = db.queryForObject("SELECT COUNT(*) FROM usuario WHERE correo=?", Integer.class, correo);
         return n != null && n > 0;
+    }
+
+    public boolean existeDniOtro(String dni, int id) {
+        Integer n = db.queryForObject(
+                "SELECT COUNT(*) FROM usuario WHERE dni=? AND id<>?", Integer.class, dni, id);
+        return n != null && n > 0;
+    }
+
+    public boolean existeCorreoOtro(String correo, int id) {
+        Integer n = db.queryForObject(
+                "SELECT COUNT(*) FROM usuario WHERE correo=? AND id<>?", Integer.class, correo, id);
+        return n != null && n > 0;
+    }
+
+    /** Lista de clientes (rol USUARIO) para el panel de admin, con búsqueda opcional por nombre/DNI/celular/correo. */
+    public List<Map<String, Object>> listarClientes(String q) {
+        if (q == null || q.isBlank()) {
+            return db.queryForList(
+                    "SELECT id, nombre, dni, celular, correo, estado FROM usuario " +
+                    "WHERE rol='USUARIO' ORDER BY nombre");
+        }
+        String like = "%" + q.trim() + "%";
+        return db.queryForList(
+                "SELECT id, nombre, dni, celular, correo, estado FROM usuario " +
+                "WHERE rol='USUARIO' AND (nombre LIKE ? OR dni LIKE ? OR celular LIKE ? OR correo LIKE ?) " +
+                "ORDER BY nombre", like, like, like, like);
+    }
+
+    public Optional<Map<String, Object>> obtenerCliente(int id) {
+        List<Map<String, Object>> filas = db.queryForList(
+                "SELECT id, nombre, dni, celular, correo, estado FROM usuario WHERE id=? AND rol='USUARIO'", id);
+        return filas.isEmpty() ? Optional.empty() : Optional.of(filas.get(0));
+    }
+
+    /** Edita los datos de un cliente. Si viene password (no vacía), también se actualiza. */
+    public void actualizarCliente(int id, RegistroIn in) {
+        if (in.password != null && !in.password.isBlank()) {
+            db.update("UPDATE usuario SET nombre=?, dni=?, celular=?, correo=?, password=? WHERE id=? AND rol='USUARIO'",
+                    in.nombre, in.dni, in.celular, in.correo, encoder.encode(in.password), id);
+        } else {
+            db.update("UPDATE usuario SET nombre=?, dni=?, celular=?, correo=? WHERE id=? AND rol='USUARIO'",
+                    in.nombre, in.dni, in.celular, in.correo, id);
+        }
+    }
+
+    public boolean cambiarEstadoCliente(int id, String estado) {
+        int filas = db.update(
+                "UPDATE usuario SET estado=? WHERE id=? AND rol='USUARIO'", estado, id);
+        return filas > 0;
     }
 
     public int totalAdmins() {

@@ -22,6 +22,8 @@ public class DemoDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        asegurarColumnaEstado();
+
         List<Map<String, Object>> sinClave = db.queryForList(
                 "SELECT id, dni FROM usuario WHERE password IS NULL OR password = ''");
         if (sinClave.isEmpty()) return;
@@ -31,5 +33,16 @@ public class DemoDataInitializer implements CommandLineRunner {
         }
         System.out.println(">> Clave temporal 'cochera123' asignada a " + sinClave.size()
                 + " usuario(s) demo sin password (tabla usuario). Cámbiala antes de producción.");
+    }
+
+    /** Agrega la columna "estado" a bases de datos creadas antes de que existiera (cochera.sql viejo). */
+    private void asegurarColumnaEstado() {
+        Integer existe = db.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.columns " +
+                "WHERE table_schema = DATABASE() AND table_name = 'usuario' AND column_name = 'estado'",
+                Integer.class);
+        if (existe == null || existe == 0) {
+            db.execute("ALTER TABLE usuario ADD COLUMN estado ENUM('ACTIVO','INACTIVO') NOT NULL DEFAULT 'ACTIVO'");
+        }
     }
 }

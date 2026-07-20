@@ -3,6 +3,7 @@ package pe.cochera.admin;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
+import pe.cochera.auth.RegistroIn;
 import pe.cochera.reserva.Reserva;
 import pe.cochera.reserva.ReservaService;
 import pe.cochera.sesion.SesionService;
@@ -99,6 +100,62 @@ public class AdminController {
         }
         db.update("INSERT INTO tipo_vehiculo (nombre, precio_dia) VALUES (?,?)", in.nombre.trim(), in.precioDia);
         return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    /** Lista de clientes para el panel "Crear cliente", con búsqueda opcional por nombre/DNI/celular/correo. */
+    @GetMapping("/clientes")
+    public List<Map<String, Object>> listarClientes(@RequestHeader(value = "Authorization", required = false) String auth,
+                                                       @RequestParam(required = false) String q) {
+        sesiones.validar(auth, "ADMIN");
+        return usuarios.listarClientes(q);
+    }
+
+    /** Datos de un cliente para precargar el formulario de edición. */
+    @GetMapping("/clientes/{id}")
+    public ResponseEntity<?> obtenerCliente(@RequestHeader(value = "Authorization", required = false) String auth,
+                                              @PathVariable int id) {
+        sesiones.validar(auth, "ADMIN");
+        Optional<Map<String, Object>> cliente = usuarios.obtenerCliente(id);
+        if (cliente.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "No existe ese cliente."));
+        }
+        return ResponseEntity.ok(cliente.get());
+    }
+
+    /** Edita los datos de un cliente ya registrado. La contraseña solo se cambia si viene informada. */
+    @PutMapping("/clientes/{id}")
+    public ResponseEntity<?> editarCliente(@RequestHeader(value = "Authorization", required = false) String auth,
+                                             @PathVariable int id, @RequestBody RegistroIn in) {
+        sesiones.validar(auth, "ADMIN");
+        if (usuarios.obtenerCliente(id).isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "No existe ese cliente."));
+        }
+        if (in.password != null && !in.password.isBlank() && in.password.length() < 4) {
+            return ResponseEntity.status(400).body(Map.of("error", "La contraseña debe tener al menos 4 caracteres."));
+        }
+        if (usuarios.existeDniOtro(in.dni, id)) {
+            return ResponseEntity.status(409).body(Map.of("error", "Ya existe otra cuenta con ese DNI."));
+        }
+        if (usuarios.existeCorreoOtro(in.correo, id)) {
+            return ResponseEntity.status(409).body(Map.of("error", "Ya existe otra cuenta con ese correo."));
+        }
+        usuarios.actualizarCliente(id, in);
+        return ResponseEntity.ok(Map.of("ok", true, "nombre", in.nombre));
+    }
+
+    /** Activa o desactiva la cuenta de un cliente (bloquea/permite su login sin borrar sus datos). */
+    @PutMapping("/clientes/{id}/estado/{estado}")
+    public ResponseEntity<?> cambiarEstadoCliente(@RequestHeader(value = "Authorization", required = false) String auth,
+                                                    @PathVariable int id, @PathVariable String estado) {
+        sesiones.validar(auth, "ADMIN");
+        String estadoNorm = estado.toUpperCase();
+        if (!estadoNorm.equals("ACTIVO") && !estadoNorm.equals("INACTIVO")) {
+            return ResponseEntity.status(400).body(Map.of("error", "Estado inválido."));
+        }
+        if (!usuarios.cambiarEstadoCliente(id, estadoNorm)) {
+            return ResponseEntity.status(404).body(Map.of("error", "No existe ese cliente."));
+        }
+        return ResponseEntity.ok(Map.of("ok", true, "estado", estadoNorm));
     }
 
     /** El vigilante marca el ingreso real del vehículo. */

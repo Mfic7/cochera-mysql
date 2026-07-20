@@ -55,6 +55,10 @@ public class AuthController {
         }
         rateLimiter.limpiarFallos(claveIntentos);
         UsuarioRow u = filaOpt.get();
+        if ("INACTIVO".equals(u.estado())) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "Tu cuenta está inactiva. Contacta al administrador."));
+        }
         String token = sesiones.crear(u.id(), u.nombre(), rol);
         return ResponseEntity.ok(Map.of("token", token, "nombre", u.nombre()));
     }
@@ -69,7 +73,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("token", token, "nombre", in.nombre));
     }
 
-    /**
+    /**a
      * Crear un administrador nuevo desde el panel. Requiere sesión ADMIN activa
      * (no es autoservicio público) y respeta el tope de MAX_ADMINS cuentas ADMIN.
      */

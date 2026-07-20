@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cochera — Crear cliente</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--asfalto:#1b1d1c;--asfalto2:#262927;--linea:#3a3e3b;--senal:#f2c200;--alto:#e2473b;--ok:#3fa66b;--tiza:#e8e6e0;--gris:#8f938d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--asfalto);color:var(--tiza);font-family:'IBM Plex Sans',sans-serif;
+ background-image:repeating-linear-gradient(90deg,transparent 0 78px,rgba(255,255,255,.02) 78px 80px)}
+header{border-bottom:3px solid var(--senal);padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{font-family:'Archivo Black',sans-serif;font-size:20px}h1 span{color:var(--senal)}
+a.link{color:var(--senal);font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:none;border-bottom:1px solid var(--linea)}
+main{max-width:560px;margin:0 auto;padding:28px 22px 60px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--gris);margin-bottom:12px}
+form{background:var(--asfalto2);padding:22px}
+label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--gris);margin:14px 0 5px}
+label:first-child{margin-top:0}
+input{width:100%;background:var(--asfalto);border:1px solid var(--linea);color:var(--tiza);padding:11px;
+ font-family:'IBM Plex Mono',monospace;font-size:14px}
+input:focus{outline:2px solid var(--senal);outline-offset:1px}
+.fila{display:flex;gap:12px}.fila>div{flex:1}
+.btn{margin-top:22px;width:100%;background:var(--senal);border:none;color:#111;padding:14px;
+ font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:.05em;cursor:pointer}
+.btn:disabled{background:var(--linea);color:var(--gris);cursor:not-allowed}
+.msg{margin-top:16px;padding:11px;font-size:13px;border-left:3px solid;display:none}
+.msg.ok{border-color:var(--ok);background:rgba(63,166,107,.1);display:block}
+.msg.err{border-color:var(--alto);background:rgba(226,71,59,.1);display:block}
+.btn-sec{margin-top:10px;width:100%;background:none;border:1px solid var(--linea);color:var(--gris);padding:12px;
+ font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;cursor:pointer}
+.btn-sec:hover{border-color:var(--senal);color:var(--senal)}
+.buscador{width:100%;background:var(--asfalto2);border:1px solid var(--linea);color:var(--tiza);padding:11px;
+ font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:14px}
+.buscador:focus{outline:2px solid var(--senal);outline-offset:1px}
+.lista{display:flex;flex-direction:column;gap:10px}
+.cliente{background:var(--asfalto2);padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.cliente .info{flex:1;min-width:180px}
+.cliente .nombre{font-size:14px;font-weight:500}
+.cliente .nombre .badge{margin-left:8px}
+.cliente .datos{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gris);margin-top:4px}
+.cliente .acc{display:flex;gap:8px;flex-wrap:wrap}
+.badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;padding:3px 7px;border:1px solid;white-space:nowrap}
+.badge.ACTIVO{color:var(--ok);border-color:var(--ok)}
+.badge.INACTIVO{color:var(--alto);border-color:var(--alto)}
+.btn-mini{background:none;border:1px solid var(--linea);color:var(--tiza);padding:7px 11px;
+ font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.03em;cursor:pointer;white-space:nowrap}
+.btn-mini:hover{border-color:var(--senal);color:var(--senal)}
+.vacio{color:var(--gris);font-size:12px;font-family:'IBM Plex Mono',monospace;padding:8px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>CREAR <span>CLIENTE</span></h1>
+  <a class="link" href="admin.html">← Volver al panel</a>
+</header>
+
+<main>
+  <p class="eyebrow" id="eyebrowCliente">DATOS DEL NUEVO CLIENTE</p>
+  <form id="frmCliente">
+    <input type="hidden" id="cId">
+    <label for="cNombre">NOMBRE</label>
+    <input id="cNombre" required placeholder="Luis Ramos">
+
+    <div class="fila">
+      <div>
+        <label for="cDni">DNI</label>
+        <input id="cDni" required pattern="\d{8}" title="8 dígitos" placeholder="45871236">
+      </div>
+      <div>
+        <label for="cCelular">CELULAR</label>
+        <input id="cCelular" required pattern="\d{9}" title="9 dígitos" placeholder="987654321">
+      </div>
+    </div>
+
+    <label for="cCorreo">CORREO</label>
+    <input id="cCorreo" type="email" required placeholder="luis@mail.com">
+
+    <label for="cPassword">CONTRASEÑA</label>
+    <input id="cPassword" type="password" required minlength="4" placeholder="mínimo 4 caracteres">
+
+    <button class="btn" id="btnCliente" type="submit">CREAR CLIENTE</button>
+    <button class="btn-sec" id="btnCancelar" type="button" style="display:none">CANCELAR EDICIÓN</button>
+    <div class="msg" id="msgCliente"></div>
+  </form>
+
+  <p class="eyebrow" style="margin-top:34px">CLIENTES REGISTRADOS</p>
+  <input class="buscador" id="buscarCliente" placeholder="Buscar por nombre, DNI, celular o correo…">
+  <div class="lista" id="listaClientes"></div>
+</main>
+
+<script src="js/error-modal.js"></script>
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) location.href = 'admin-login.html';
+
+function escapar(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function modoCrear(){
+  frmCliente.reset();
+  cId.value = '';
+  eyebrowCliente.textContent = 'DATOS DEL NUEVO CLIENTE';
+  btnCliente.textContent = 'CREAR CLIENTE';
+  btnCancelar.style.display = 'none';
+  cPassword.required = true;
+  cPassword.placeholder = 'mínimo 4 caracteres';
+}
+
+async function editarCliente(id){
+  msgCliente.style.display = 'none';
+  try{
+    const r = await fetch('/api/admin/clientes/' + id, { headers: { Authorization: 'Bearer ' + token } });
+    if (r.status === 401 || r.status === 403) { location.href = 'admin-login.html'; return; }
+    if (!r.ok) return;
+    const c = await r.json();
+    cId.value = c.id;
+    cNombre.value = c.nombre;
+    cDni.value = c.dni;
+    cCelular.value = c.celular;
+    cCorreo.value = c.correo;
+    cPassword.value = '';
+    cPassword.required = false;
+    cPassword.placeholder = 'dejar vacío para no cambiarla';
+    eyebrowCliente.textContent = 'EDITANDO CLIENTE — ' + c.nombre.toUpperCase();
+    btnCliente.textContent = 'GUARDAR CAMBIOS';
+    btnCancelar.style.display = 'block';
+    cNombre.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }catch(err){
+    if (typeof showErrorModal === 'function') showErrorModal(null, () => editarCliente(id));
+  }
+}
+
+async function cambiarEstado(id, estadoActual){
+  const nuevo = estadoActual === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+  try{
+    const r = await fetch('/api/admin/clientes/' + id + '/estado/' + nuevo, {
+      method: 'PUT', headers: { Authorization: 'Bearer ' + token }
+    });
+    if (r.status === 401 || r.status === 403) { location.href = 'admin-login.html'; return; }
+    if (r.ok) cargarClientes(buscarCliente.value);
+  }catch(err){
+    if (typeof showErrorModal === 'function') showErrorModal(null, () => cambiarEstado(id, estadoActual));
+  }
+}
+
+async function cargarClientes(q){
+  try{
+    const r = await fetch('/api/admin/clientes' + (q ? '?q=' + encodeURIComponent(q) : ''),
+      { headers: { Authorization: 'Bearer ' + token } });
+    if (r.status === 401 || r.status === 403) { location.href = 'admin-login.html'; return; }
+    const clientes = await r.json();
+    if (!clientes.length) {
+      listaClientes.innerHTML = '<p class="vacio">No se encontraron clientes.</p>';
+      return;
+    }
+    listaClientes.innerHTML = clientes.map(c => `
+      <div class="cliente">
+        <div class="info">
+          <div class="nombre">${escapar(c.nombre)}<span class="badge ${c.estado}">${c.estado}</span></div>
+          <div class="datos">DNI ${escapar(c.dni)} · ${escapar(c.celular)} · ${escapar(c.correo)}</div>
+        </div>
+        <div class="acc">
+          <button class="btn-mini" onclick="editarCliente(${c.id})">EDITAR</button>
+          <button class="btn-mini" onclick="cambiarEstado(${c.id}, '${c.estado}')">${c.estado === 'ACTIVO' ? 'DESACTIVAR' : 'ACTIVAR'}</button>
+        </div>
+      </div>
+    `).join('');
+  }catch(err){
+    if (typeof showErrorModal === 'function') showErrorModal(null, () => cargarClientes(q));
+  }
+}
+
+let buscarDebounce;
+buscarCliente.oninput = () => {
+  clearTimeout(buscarDebounce);
+  buscarDebounce = setTimeout(() => cargarClientes(buscarCliente.value), 300);
+};
+
+btnCancelar.onclick = modoCrear;
+
+frmCliente.onsubmit = async e => {
+  e.preventDefault();
+  msgCliente.style.display = 'none';
+  btnCliente.disabled = true;
+  const editando = !!cId.value;
+  const body = {
+    nombre: cNombre.value.trim(), dni: cDni.value.trim(), celular: cCelular.value.trim(),
+    correo: cCorreo.value.trim(), password: cPassword.value
+  };
+  try{
+    const url = editando ? '/api/admin/clientes/' + cId.value : '/api/auth/crear-usuario';
+    const r = await fetch(url, {
+      method: editando ? 'PUT' : 'POST',
+      headers:{'Content-Type':'application/json', Authorization:'Bearer '+token}, body: JSON.stringify(body)
+    });
+    if (r.status === 401 || r.status === 403) { location.href = 'admin-login.html'; return; }
+    const d = await r.json();
+    msgCliente.className = 'msg ' + (r.ok ? 'ok' : 'err');
+    msgCliente.textContent = r.ok
+      ? 'Cliente "' + d.nombre + '" ' + (editando ? 'actualizado' : 'creado') + ' correctamente.'
+      : d.error;
+    msgCliente.style.display = 'block';
+    if (r.ok) {
+      modoCrear();
+      cNombre.focus();   // listo para crear otro
+      cargarClientes(buscarCliente.value);
+    }
+  }catch(err){
+    if (typeof showErrorModal === 'function') showErrorModal(null, () => frmCliente.requestSubmit());
+    else { msgCliente.className='msg err'; msgCliente.textContent='Sin conexión con el servidor.'; msgCliente.style.display='block'; }
+  }
+  btnCliente.disabled = false;
+};
+
+cargarClientes();
+</script>
+</body>
+</html>

@@ -75,7 +75,7 @@ input:focus{outline:2px solid var(--senal);outline-offset:1px}
 
 <script src="js/error-modal.js"></script>
 <script>
-const API = '/api/auth';
+const API = 'http://localhost:8080/api/auth';
 const params = new URLSearchParams(location.search);
 const rol = params.get('rol') === 'admin' ? 'admin' : 'usuario';
 const loginPage = rol === 'admin' ? 'admin-login.html' : 'usuario-login.html';

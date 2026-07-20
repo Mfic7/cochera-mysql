@@ -199,7 +199,7 @@ a.link{color:var(--senal);font-family:'IBM Plex Mono',monospace;font-size:12px;t
 
 <script src="js/error-modal.js"></script>
 <script>
-const API = '/api/admin';
+const API = 'http://localhost:8080/api/admin';
 const hoyISO = new Date().toISOString().slice(0, 10);
 let cupoMax = 3;
 let sedes = [];
@@ -210,7 +210,7 @@ if (!token) location.href = 'admin-login.html';
 saludo.textContent = 'HOLA, ' + (localStorage.getItem('admin_nombre') || '').toUpperCase();
 
 function cerrarSesion(){
-  fetch('/api/auth/logout', { method:'POST', headers:{Authorization:'Bearer '+token} }).catch(()=>{});
+  fetch('http://localhost:8080/api/auth/logout', { method:'POST', headers:{Authorization:'Bearer '+token} }).catch(()=>{});
   localStorage.removeItem('admin_token'); localStorage.removeItem('admin_nombre');
   location.href = 'admin-login.html';
 }
@@ -224,7 +224,7 @@ async function get(u){
 }
 
 async function cargarSedes(){
-  sedes = await (await fetch('/api/sedes')).json();
+  sedes = await (await fetch('http://localhost:8080/api/sedes')).json();
   document.getElementById('sedes').innerHTML = sedes.map(s =>
     '<button class="sede-tab' + (s.id===sedeActual ? ' activa' : '') + '" onclick="elegirSede(' + s.id + ')">' +
     s.nombre.toUpperCase() + '</button>').join('');
@@ -357,7 +357,7 @@ async function cambiarCupo(){
 }
 
 async function cargarTiposVehiculo(){
-  const lista = await (await fetch('/api/tipos-vehiculo')).json();
+  const lista = await (await fetch('http://localhost:8080/api/tipos-vehiculo')).json();
   tiposVehiculoLista.innerHTML = lista.map(t =>
     '<div class="tipo-row"><span class="nombre">' + t.nombre + '</span>' +
     '<span class="precio-wrap">S/ <input type="number" min="0" step="0.5" value="' + Number(t.precioDia).toFixed(2) +
@@ -365,7 +365,7 @@ async function cargarTiposVehiculo(){
 }
 async function cambiarPrecioTipo(id, precio){
   try{
-    await fetch('/api/admin/tipos-vehiculo/' + id, {
+    await fetch('http://localhost:8080/api/admin/tipos-vehiculo/' + id, {
       method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
       body: JSON.stringify({ precioDia: Number(precio) })
     });
@@ -378,7 +378,7 @@ frmTipoNuevo.onsubmit = async e => {
   msgTipoNuevo.style.display = 'none';
   btnTipoNuevo.disabled = true;
   try{
-    const r = await fetch('/api/admin/tipos-vehiculo', {
+    const r = await fetch('http://localhost:8080/api/admin/tipos-vehiculo', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
       body: JSON.stringify({ nombre: tvNombre.value.trim(), precioDia: Number(tvPrecio.value) })
     });
@@ -402,7 +402,7 @@ frmAdmin.onsubmit = async e => {
     correo: aCorreo.value.trim(), password: aPassword.value
   };
   try{
-    const r = await fetch('/api/auth/crear-admin', {
+    const r = await fetch('http://localhost:8080/api/auth/crear-admin', {
       method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+token}, body: JSON.stringify(body)
     });
     const d = await r.json();

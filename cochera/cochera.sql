@@ -48,6 +48,7 @@ CREATE TABLE usuario (
   correo     VARCHAR(120) NOT NULL UNIQUE,
   password   VARCHAR(100) NOT NULL DEFAULT '',   -- hash BCrypt; se autocompleta al iniciar la app
   rol        ENUM('ADMIN','USUARIO') NOT NULL DEFAULT 'USUARIO',
+  estado     ENUM('ACTIVO','INACTIVO') NOT NULL DEFAULT 'ACTIVO',
   creado_en  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cochera — Reservar espacio</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--asfalto:#1b1d1c;--asfalto2:#262927;--linea:#3a3e3b;--senal:#f2c200;--alto:#e2473b;--ok:#3fa66b;--tiza:#e8e6e0;--gris:#8f938d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--asfalto);color:var(--tiza);font-family:'IBM Plex Sans',sans-serif;
+ background-image:repeating-linear-gradient(90deg,transparent 0 78px,rgba(255,255,255,.02) 78px 80px)}
+header{border-bottom:3px solid var(--senal);padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{font-family:'Archivo Black',sans-serif;font-size:20px}h1 span{color:var(--senal)}
+a.link{color:var(--senal);font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:none;border-bottom:1px solid var(--linea)}
+main{max-width:640px;margin:0 auto;padding:28px 22px 60px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--gris);margin-bottom:12px}
+form{background:var(--asfalto2);padding:22px}
+label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--gris);margin:14px 0 5px}
+label:first-child{margin-top:0}
+input,select{width:100%;background:var(--asfalto);border:1px solid var(--linea);color:var(--tiza);padding:11px;
+ font-family:'IBM Plex Mono',monospace;font-size:14px}
+input:focus,select:focus{outline:2px solid var(--senal);outline-offset:1px}
+.fila{display:flex;gap:12px}.fila>div{flex:1}
+.btn{margin-top:22px;width:100%;background:var(--senal);border:none;color:#111;padding:14px;
+ font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:.05em;cursor:pointer}
+.btn:disabled{background:var(--linea);color:var(--gris);cursor:not-allowed}
+.msg{margin-top:16px;padding:11px;font-size:13px;border-left:3px solid;display:none}
+.msg.ok{border-color:var(--ok);background:rgba(63,166,107,.1);display:block}
+.msg.err{border-color:var(--alto);background:rgba(226,71,59,.1);display:block}
+</style>
+</head>
+<body>
+<header>
+  <h1>RESERVAR <span>ESPACIO</span></h1>
+  <a class="link" href="admin.html">← Volver al panel</a>
+</header>
+
+<main>
+  <p class="eyebrow">SEPARAR ESPACIO PARA UN CLIENTE YA REGISTRADO</p>
+  <form id="frmReservaCliente">
+    <label for="rSede">SEDE</label>
+    <select id="rSede"></select>
+    <div class="fila">
+      <div><label for="rDni">DNI DEL CLIENTE</label><input id="rDni" required pattern="\d{8}" title="8 dígitos"></div>
+      <div><label for="rPlaca">PLACA</label><input id="rPlaca" required style="text-transform:uppercase"></div>
+    </div>
+    <label for="rModelo">MODELO (OPCIONAL)</label>
+    <input id="rModelo" placeholder="Toyota Yaris">
+    <label for="rTipo">TIPO DE VEHÍCULO</label>
+    <select id="rTipo"></select>
+    <div class="fila">
+      <div><label for="rHora">HORA DE LLEGADA</label><input id="rHora" type="time" value="10:00" required></div>
+      <div><label for="rDias">DÍAS (1 = solo hoy)</label><input id="rDias" type="number" min="1" max="60" value="1"></div>
+    </div>
+    <button class="btn" id="btnReservaCliente" type="submit">RESERVAR ESPACIO</button>
+    <div class="msg" id="msgReservaCliente"></div>
+  </form>
+</main>
+
+<script src="js/error-modal.js"></script>
+<script>
+const token = localStorage.getItem('admin_token');
+if (!token) location.href = 'admin-login.html';
+
+async function cargarSedes(){
+  const sedes = await (await fetch('http://localhost:8080/api/sedes')).json();
+  const actual = Number(localStorage.getItem('admin_sede')) || 1;
+  rSede.innerHTML = sedes.map(s =>
+    '<option value="'+s.id+'"'+(s.id===actual?' selected':'')+'>'+s.nombre+'</option>').join('');
+}
+
+async function cargarTiposVehiculo(){
+  const lista = await (await fetch('http://localhost:8080/api/tipos-vehiculo')).json();
+  rTipo.innerHTML = lista.map(t =>
+    '<option value="' + t.id + '">' + t.nombre + ' — S/ ' + Number(t.precioDia).toFixed(2) + '</option>').join('');
+}
+
+frmReservaCliente.onsubmit = async e => {
+  e.preventDefault();
+  msgReservaCliente.style.display = 'none';
+  btnReservaCliente.disabled = true;
+  const body = {
+    dni: rDni.value.trim(), sedeId: Number(rSede.value), placa: rPlaca.value.trim().toUpperCase(),
+    modelo: rModelo.value.trim(), tipoVehiculoId: Number(rTipo.value) || 1,
+    horaLlegada: rHora.value + ':00', dias: Number(rDias.value) || 1
+  };
+  try{
+    const r = await fetch('http://localhost:8080/api/admin/reservas', {
+      method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+token}, body: JSON.stringify(body)
+    });
+    if (r.status === 401 || r.status === 403) { location.href = 'admin-login.html'; return; }
+    const d = await r.json();
+    msgReservaCliente.className = 'msg ' + (r.ok ? 'ok' : 'err');
+    msgReservaCliente.textContent = r.ok ? d.mensaje : d.error;
+    msgReservaCliente.style.display = 'block';
+    if (r.ok) { frmReservaCliente.reset(); rHora.value = '10:00'; rDias.value = 1; cargarSedes(); }
+  }catch(err){
+    if (typeof showErrorModal === 'function') showErrorModal(null, () => frmReservaCliente.requestSubmit());
+    else { msgReservaCliente.className='msg err'; msgReservaCliente.textContent='Sin conexión con el servidor.'; msgReservaCliente.style.display='block'; }
+  }
+  btnReservaCliente.disabled = false;
+};
+
+cargarSedes();
+cargarTiposVehiculo();
+</script>
+</body>
+</html>
