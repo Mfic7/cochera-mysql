@@ -57,6 +57,35 @@ public class UsuarioController {
     }
 
     /**
+     * Notificaciones del usuario logueado: sus avisos de ingreso y salida con la hora real.
+     * Son las notificaciones que el admin generó a su nombre (usuario_id = el suyo).
+     */
+    @GetMapping("/mis-notificaciones")
+    public List<Map<String, Object>> misNotificaciones(@RequestHeader(value = "Authorization", required = false) String auth) {
+        Sesion s = sesiones.validar(auth, "USUARIO");
+        return db.queryForList(
+                "SELECT id, tipo, mensaje, leida, creado_en AS creadoEn " +
+                "FROM notificacion WHERE usuario_id = ? ORDER BY creado_en DESC LIMIT 30", s.usuarioId());
+    }
+
+    /** Cuántas notificaciones sin leer tiene el usuario (para el puntito/contador). */
+    @GetMapping("/mis-notificaciones/no-leidas")
+    public Map<String, Object> misNotificacionesNoLeidas(@RequestHeader(value = "Authorization", required = false) String auth) {
+        Sesion s = sesiones.validar(auth, "USUARIO");
+        Integer n = db.queryForObject(
+                "SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND leida = 0", Integer.class, s.usuarioId());
+        return Map.of("noLeidas", n == null ? 0 : n);
+    }
+
+    /** Marca como leídas las notificaciones del usuario (al abrir su lista). */
+    @PostMapping("/mis-notificaciones/marcar-leidas")
+    public Map<String, Object> marcarLeidas(@RequestHeader(value = "Authorization", required = false) String auth) {
+        Sesion s = sesiones.validar(auth, "USUARIO");
+        db.update("UPDATE notificacion SET leida = 1 WHERE usuario_id = ? AND leida = 0", s.usuarioId());
+        return Map.of("ok", true);
+    }
+
+    /**
      * Aviso de llegada a una sede. El usuario ya está identificado por su sesión (token);
      * solo se reciben sede, placa, modelo, hora y (opcional) días si se va de viaje.
      */

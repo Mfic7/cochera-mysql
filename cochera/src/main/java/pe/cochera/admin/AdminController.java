@@ -48,7 +48,7 @@ public class AdminController {
         r.put("movimientos", movimientosData(sedeId));
         r.put("notificaciones", notificacionesData(sedeId));
         r.put("notificacionesNoLeidas", db.queryForObject(
-                "SELECT COUNT(*) FROM notificacion WHERE sede_id=? AND leida=0", Integer.class, sedeId));
+                "SELECT COUNT(*) FROM notificacion WHERE sede_id=? AND usuario_id IS NULL AND leida=0", Integer.class, sedeId));
         return r;
     }
 
@@ -57,7 +57,7 @@ public class AdminController {
     public Map<String, Object> marcarLeidas(@RequestHeader(value = "Authorization", required = false) String auth,
                                               @RequestParam(defaultValue = "1") int sedeId) {
         sesiones.validar(auth, "ADMIN");
-        db.update("UPDATE notificacion SET leida=1 WHERE sede_id=? AND leida=0", sedeId);
+        db.update("UPDATE notificacion SET leida=1 WHERE sede_id=? AND usuario_id IS NULL AND leida=0", sedeId);
         return Map.of("ok", true);
     }
 
@@ -163,12 +163,24 @@ public class AdminController {
     public Map<String, Object> ingreso(@RequestHeader(value = "Authorization", required = false) String auth,
                                         @PathVariable int id) {
         sesiones.validar(auth, "ADMIN");
+        String horaReal = hhmm();
+
         db.update("UPDATE reserva SET estado='EN_COCHERA', hora_ingreso=NOW() " +
                 "WHERE id=? AND estado='PENDIENTE'", id);
+
+        // Notificación para el ADMIN (usuario_id NULL -> es de la sede)
         db.update("INSERT INTO notificacion (reserva_id, sede_id, tipo, mensaje) " +
                 "SELECT ?, sede_id, 'INGRESO', CONCAT('Ingresó el vehículo de la reserva #', ?, ' a las ', ?) " +
                 "FROM reserva WHERE id=?",
-                id, id, hhmm(), id);
+                id, id, horaReal, id);
+
+        // Notificación para el CLIENTE (usuario_id de la reserva)
+        db.update("INSERT INTO notificacion (reserva_id, sede_id, usuario_id, tipo, mensaje) " +
+                "SELECT r.id, r.sede_id, r.usuario_id, 'INGRESO', " +
+                "       CONCAT('Registramos el ingreso de tu vehículo ', v.placa, ' a las ', ?) " +
+                "FROM reserva r JOIN vehiculo v ON v.id = r.vehiculo_id WHERE r.id=?",
+                horaReal, id);
+
         return Map.of("ok", true);
     }
 
@@ -195,13 +207,33 @@ public class AdminController {
     public Map<String, Object> salida(@RequestHeader(value = "Authorization", required = false) String auth,
                                        @PathVariable int id) {
         sesiones.validar(auth, "ADMIN");
+        String horaReal = hhmm();
+
         db.update("UPDATE reserva SET estado='SALIO', hora_salida=NOW() " +
                 "WHERE id=? AND estado='EN_COCHERA'", id);
+
+        // Notificación para el ADMIN (usuario_id NULL -> es de la sede)
         db.update("INSERT INTO notificacion (reserva_id, sede_id, tipo, mensaje) " +
                 "SELECT ?, sede_id, 'SALIDA', CONCAT('Salió el vehículo de la reserva #', ?, ' — cupo liberado') " +
                 "FROM reserva WHERE id=?",
                 id, id, id);
+
+        // Notificación para el CLIENTE (usuario_id de la reserva)
+        db.update("INSERT INTO notificacion (reserva_id, sede_id, usuario_id, tipo, mensaje) " +
+                "SELECT r.id, r.sede_id, r.usuario_id, 'SALIDA', " +
+                "       CONCAT('Registramos la salida de tu vehículo ', v.placa, ' a las ', ?, '. ¡Gracias por tu visita!') " +
+                "FROM reserva r JOIN vehiculo v ON v.id = r.vehiculo_id WHERE r.id=?",
+                horaReal, id);
+
         return Map.of("ok", true);
+    }
+
+    /** Notificaciones de un cliente (las que tienen su usuario_id). Las usa el panel del usuario. */
+    @GetMapping("/clientes/{id}/notificaciones")
+    public List<Map<String, Object>> notificacionesCliente(@PathVariable int id) {
+        return db.queryForList(
+                "SELECT id, tipo, mensaje, leida, creado_en AS creadoEn " +
+                "FROM notificacion WHERE usuario_id = ? ORDER BY creado_en DESC LIMIT 30", id);
     }
 
     private Map<String, Object> dashboardData(int sedeId) {
@@ -231,9 +263,10 @@ public class AdminController {
         """, sedeId);
     }
 
+    /** Solo notificaciones de la SEDE (para el admin): las que no tienen usuario_id. */
     private List<Map<String, Object>> notificacionesData(int sedeId) {
         return db.queryForList(
                 "SELECT id, tipo, mensaje, leida, creado_en AS creadoEn " +
-                "FROM notificacion WHERE sede_id = ? ORDER BY creado_en DESC LIMIT 30", sedeId);
+                "FROM notificacion WHERE sede_id = ? AND usuario_id IS NULL ORDER BY creado_en DESC LIMIT 30", sedeId);
     }
 }
