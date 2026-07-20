@@ -399,6 +399,10 @@ cargarTiposVehiculo();
 setInterval(()=> reloj.textContent = new Date().toLocaleTimeString('es-PE'), 1000);
 setInterval(cargar, 5000);
 cargar();
+
+// avisa al temporizador de inactividad cuál es la función de cierre de sesión
+window.CERRAR_SESION = cerrarSesion;
 </script>
+<script src="js/inactividad.js"></script>
 </body>
 </html>

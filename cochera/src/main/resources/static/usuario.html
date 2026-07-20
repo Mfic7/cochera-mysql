@@ -20,6 +20,7 @@ a.link{color:var(--senal);font-family:'IBM Plex Mono',monospace;font-size:12px;t
 .bell{position:relative;background:none;border:1px solid var(--linea);color:var(--tiza);padding:6px 12px;
  font-size:15px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
 .bell:hover{border-color:var(--senal);color:var(--senal)}
+.bell.activa{border-color:var(--senal);background:rgba(242,194,0,.08)}
 .bell .badge{position:absolute;top:-7px;right:-7px;background:var(--alto);color:#fff;border-radius:10px;
  font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1;padding:3px 5px;display:none}
 main{max-width:560px;margin:0 auto;padding:28px 22px 60px}
@@ -76,9 +77,12 @@ input:focus,select:focus{outline:2px solid var(--senal);outline-offset:1px}
 
   <div id="recordatorios"></div>
 
-  <p class="eyebrow">MIS NOTIFICACIONES</p>
-  <div class="notis" id="misNotis">
-    <p class="noti-vacio">Cargando…</p>
+  <!-- MIS NOTIFICACIONES: oculto hasta tocar la campana -->
+  <div id="bloqueNotis" style="display:none">
+    <p class="eyebrow">MIS NOTIFICACIONES</p>
+    <div class="notis" id="misNotis">
+      <p class="noti-vacio">Cargando…</p>
+    </div>
   </div>
 
   <p class="eyebrow">DISPONIBILIDAD AHORA</p>
@@ -198,6 +202,7 @@ async function cargarRecordatorios(){
 
 const horaNoti = v => v ? String(v).slice(0,16).replace('T',' ').slice(5) : '';
 
+// carga la lista y actualiza el contador de la campana
 async function cargarMisNotificaciones(){
   try{
     const lista = await (await fetch(API+'/mis-notificaciones', { headers:{Authorization:'Bearer '+token} })).json();
@@ -219,10 +224,21 @@ async function cargarMisNotificaciones(){
   }
 }
 
+// la campana muestra/oculta el bloque de notificaciones
 btnCampana.onclick = async () => {
+  const abierto = bloqueNotis.style.display !== 'none';
+  if (abierto) {
+    bloqueNotis.style.display = 'none';
+    btnCampana.classList.remove('activa');
+    return;
+  }
+  // abrir: refresca, muestra y marca como leídas
+  await cargarMisNotificaciones();
+  bloqueNotis.style.display = 'block';
+  btnCampana.classList.add('activa');
+  bloqueNotis.scrollIntoView({ behavior:'smooth', block:'start' });
   try{ await fetch(API+'/mis-notificaciones/marcar-leidas', { method:'POST', headers:{Authorization:'Bearer '+token} }); }catch(e){}
   badgeNoti.style.display = 'none';
-  misNotis.scrollIntoView({ behavior:'smooth', block:'center' });
 };
 
 function cerrarSesion(){
@@ -326,9 +342,13 @@ cargarTiposVehiculo();
 cargarSedes();
 cargarMisVehiculos();
 cargarRecordatorios();
-cargarMisNotificaciones();
+cargarMisNotificaciones();   // carga el contador de la campana al abrir la página
 setInterval(verCupo, 5000);
-setInterval(cargarMisNotificaciones, 15000);
+setInterval(cargarMisNotificaciones, 15000);   // refresca el contador cada 15s
+
+// avisa al temporizador de inactividad cuál es la función de cierre de sesión
+window.CERRAR_SESION = cerrarSesion;
 </script>
+<script src="js/inactividad.js"></script>
 </body>
 </html>
