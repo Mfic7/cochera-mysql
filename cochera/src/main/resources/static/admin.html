@@ -396,7 +396,7 @@ frmTipoNuevo.onsubmit = async e => {
 renderCalendario();
 cargarSedes();
 cargarTiposVehiculo();
-setInterval(()=> reloj.textContent = new Date().toLocaleTimeString('es-PE'), 1000);
+setInterval(()=> reloj.textContent = new Date().toLocaleTimeString('es-PE', { hour: 'numeric', minute: '2-digit' }), 1000);
 setInterval(cargar, 5000);
 cargar();
 
